@@ -54,7 +54,7 @@ like BOOTSYS to load a replacement system image into the correct
 memory banks for testing.
 
 * Added a zero checksum vector size to invokations of the DPH macro
-since all drives are permanently mmounted - in the VDISK module.
+since all drives are permanently mounted - in the VDISK module.
 
 My modified Z80 sourcecode is in various .MAC modules and can be built
 into a system image by the BUILDZPR.SUB (which selects the ZPM3
@@ -112,7 +112,7 @@ If you wish to download all modules in a single convenient file then
 fetch the
 https://github.com/agn453/Z80-MBC2-master/blob/master/MBC2BIOS.LBR library
 and extract the contents to an empty directory using the CP/M NULU.COM utility
-and ```lu d:MBC2BIOS.LBR -e *.*```
+and ```nulu d:MBC2BIOS.LBR -e *.*```
 
 All the files (and assembly listings) are in the bios directory.
 
