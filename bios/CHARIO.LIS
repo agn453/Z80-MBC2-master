@@ -1,0 +1,532 @@
+ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    1
+CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
+
+                                	.z80
+                                ;
+                                ;	Converted to Z80 mnemonics via XIZ by Tony Nicholson
+                                ;	with an added banked conditional around common stack
+                                ;	storage since it is not used (saves a few more bytes).
+                                ;
+                                ;	Assemble using Microsoft M80 or Hector Peraza's ZSM4
+                                ;
+                                ;******************************************************************************
+                                ;
+                                ; CHARIO.ASM - S210918-R170319
+                                ; CP/M 3.0 CHARACTER I/O BIOS MODULE FOR THE Z80-MBC2 (HW ref. A040618)
+                                ;
+                                ; Required IOS S220718-R260119 (or following revisions until otherwise stated)
+                                ;
+                                ; CHANGELOG:
+                                ;
+                                ; S210918           First release
+                                ; S210918-R090319   Changed CIST0: and CI0: to allow full 8 bit data I/O
+                                ; S210918-R170319   Added the selection of the mode of CIST0: (7 or 8 bit mode,
+                                ;
+                                ;
+                                ;******************************************************************************
+                                
+                                				; DEFINE LOGICAL VALUES:
+  FFFF  =                       true	equ	-1
+  0000  =                       false	equ	not true
+                                
+                                				; DETERMINE IF FOR BANK SELECT OR NOT:
+  0000  =                       banked	equ	false		; <------ BANKED/NON-BANKED SWITCH
+                                
+                                ; -------------------------------------------------------------------
+                                ;
+                                ;          >>>>>>>>>>>>>> READ CAREFULLY <<<<<<<<<<<<<<
+                                ;
+                                ; To prevent the CHARIO.ASM bank switching IOS requests from
+                                ; interfering with user program IOS request if using
+                                ; "slow" interpreters as e.g. MBASIC.COM, I've decided to avoid
+                                ; bank switching here. This is a simple solution to avoid more
+                                ; complex one. For this reason the "BANKED" switch is intentionally
+                                ; set at "FALSE" (although the system is banked)
+                                ;
+                                ; -------------------------------------------------------------------
+                                
+                                
+                                				; DEFINE PUBLIC LABELS:
+                                	public ?cinit,?ci,?co,?cist,?cost
+                                	public @ctbl
+                                	public  ?cnstflg	; CONST mode flag (Z80-MBC2) ***
+                                
+                                				; DEFINE EXTERNAL LABELS AND ENTRY POINTS:
+                                	 if	banked
+                                	extrn @cbnk
+                                	extrn ?bnksl
+                                	 endif
+                                	extrn ?pmsg
+                                
+ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    2
+CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
+
+                             C  	include modebaud.lib	; EQUATES FOR MODE BYTE BIT FIELDS
+                             C  	; equates for mode byte bit fields
+                             C  
+  0001  =                    C  mb$input		equ 00000001b	; device may do input
+  0002  =                    C  mb$output		equ 00000010b	; device may do output
+  0003  =                    C  mb$in$out		equ mb$input+mb$output
+                             C  
+  0004  =                    C  mb$soft$baud		equ 00000100b	; software selectable
+                             C  					; baud rates
+                             C  
+  0008  =                    C  mb$serial		equ 00001000b	; device may use protocol
+  0010  =                    C  mb$xon$xoff		equ 00010000b	; XON/XOFF protocol
+                             C  					; enabled
+                             C  
+  0000  =                    C  baud$none		equ 0		; no baud rate associated
+                             C  					; with this device
+  0001  =                    C  baud$50			equ 1		; 50 baud
+  0002  =                    C  baud$75			equ 2		; 75 baud
+  0003  =                    C  baud$110		equ 3		; 110 baud
+  0004  =                    C  baud$134		equ 4		; 134.5 baud
+  0005  =                    C  baud$150		equ 5		; 150 baud
+  0006  =                    C  baud$300		equ 6		; 300 baud
+  0007  =                    C  baud$600		equ 7		; 600 baud
+  0008  =                    C  baud$1200		equ 8		; 1200 baud
+  0009  =                    C  baud$1800		equ 9		; 1800 baud
+  000A  =                    C  baud$2400		equ 10		; 2400 baud
+  000B  =                    C  baud$3600		equ 11		; 3600 baud
+  000C  =                    C  baud$4800		equ 12		; 4800 baud
+  000D  =                    C  baud$7200		equ 13		; 7200 baud
+  000E  =                    C  baud$9600		equ 14		; 9600 baud
+  000F  =                    C  baud$19200		equ 15		; 19.2k baud
+                                
+                                ; -----------------------------------------------------------------------------
+                                ;
+                                ; Z80-MBC2 IOS equates
+                                ;
+                                ; -----------------------------------------------------------------------------
+                                
+  0000  =                       exc$wr$opcd equ	000h		; Address of the EXECUTE WRITE OPCODE write port
+  0000  =                       exc$rd$opcd equ	000h		; Address of the EXECUTE READ OPCODE read port
+  0001  =                       sto$opcd equ	001h		; Address of the STORE OPCODE write port
+  0001  =                       serial$rx equ	001h		; Address of the SERIAL RX read port
+  0001  =                       sertx$opc equ	001h		; SERIAL TX opcode
+  0009  =                       seldisk$opc equ	009h		; SELDISK opcode
+  000A  =                       seltrck$opc equ	00ah		; SELTRACK opcode
+  000B  =                       selsect$opc equ	00bh		; SELSECT opcode
+  000C  =                       wrtsect$opc equ	00ch		; WRITESECT opcode
+  0083  =                       sysflag$opc equ	083h		; SYSFLAG opcode
+  0084  =                       datetim$opc equ	084h		; DATETIME opcode
+  0085  =                       errdsk$opc equ	085h		; ERRDISK opcode
+  0086  =                       rdsect$opc equ	086h		; READSECT opcode
+  0087  =                       sdmount$opc equ	087h		; SDMOUNT opcode
+                                
+                                
+                                				; WILL START OFF IN COMMON MEMORY FOR BANKED OR NON-BANKED SYSTEMS:
+                                				; --------------------------
+                                	cseg
+ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    3
+CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
+
+                                				; --------------------------
+                                
+                                
+                                	 if	banked
+                                				; WE PROVIDE ALTERNATE DEFINITIONS OF THE ROUTINE ENTRY POINTS IF
+                                				;  WE ARE RUNNING A BANKED SYSTEM VERSUS A NON-BANKED SYSTEM:
+                                
+                                				; ;;;; ?CINIT
+                                				; ENTER HERE FOR BANKED SYSTEMS FOR DEVICE INITIALIZATIONS:
+                                ?cinit:
+                                	ld	hl,bcinit	; POINT TO BANKED ROUTINE ADDRESS
+                                	jr bankio		; GO TO DISPATCHER
+                                
+                                				; ;;;; ?CI
+                                				; ENTER HERE FOR BANKED SYSTEM DEVICE INPUT:
+                                ?ci:	ld	hl,bci		; POINT TO BANKED ROUTINE ADDRESS
+                                	jr bankio		; GO TO DISPATCHER
+                                
+                                				; ;;;; ?CO
+                                				; ENTER HERE FOR BANKED SYSTEM DEVICE OUTPUT:
+                                ?co:	ld	hl,bco		; POINT TO BANKED ROUTINE ADDRESS
+                                	jr bankio		; GO TO DISPATCHER
+                                
+                                				; ;;;; ?CIST
+                                				; ENTER HERE FOR BANKED SYSTEM DEVICE INPUT STATUS:
+                                ?cist:	ld	hl,bcist	; POINT TO BANKED ROUTINE ADDRESS
+                                	jr bankio		; GO TO DISPATCHER
+                                
+                                				; ;;;; ?COST
+                                				; ENTER HERE FOR BANKED SYSTEM DEVICE OUTPUT STATUS:
+                                ?cost:	ld	hl,bcost	; POINT TO BANKED ROUTINE ADDRESS
+                                
+                                
+                                				; ;;;; BANKIO
+                                				; ROUTINE DISPATCHES TO BANKED PORTION OF CHARACTER I/O ROUTINES:
+                                bankio:
+                                	ld	(spsave),sp	; SAVE CURRENT STACK POINTER
+                                	ld	sp,iosp		; AND USE LOCAL STACK FOR I/O
+                                	ld	a,(@cbnk)	; GET CURRENT BANK
+                                	push	af		; SAVE ON LOCAL STACK
+                                	xor	a		; WE WILL SELECT BANK 0 (OP SYS)
+                                	call	?bnksl
+                                	ld	de,bioret	; RETURN ADDRESS IN [DE]
+                                	push	de		; PUT IT ON STACK FOR RETURN
+                                	jp	(hl)		; DISPATCH TO BANKED PART OF ROUTINE
+                                
+                                				; ARRIVE HERE AFTER DEVICE HANDLER FINISHED:
+                                bioret:
+                                	pop	de		; GET PREVIOUS CURRENT BANK TO [D]
+                                	push	af		; SAVE HANDLER RETURNED RESULT (IF ANY)
+                                	ld	a,d		; RESELECT PREVIOUS CURRENT BANK
+                                	call	?bnksl
+                                	pop	af		; GET BACK RESULT CODE TO [A]
+                                	ld	sp,(spsave)	; RESTORE PREVIOUS STACK
+                                	ret			; AND RETURN...
+                                	 endif
+                                
+ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    4
+CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
+
+                                
+                                				; ;;;;
+                                				; ;;;; ACTUAL DEVICE HANDLERS
+                                				; ;;;;
+                                
+                                
+                                				; ;;;; ?CINIT (BCINIT FOR BANKED)
+                                				; PHYSICAL CODE FOR DEVICE INITIALIZATION:
+                                	 if	banked
+                                				; --------------------------
+                                	dseg			; CAN PUT IN BANKED SEGMENT IF BANKED
+                                				; --------------------------
+                                bcinit:
+                                	 else
+  0000'                         ?cinit:
+                                	 endif
+  0000' 41                      	ld	b,c		; ON ENTRY DEVICE # IS IN [C] BUT WE NEED
+                                				; IT IN [B]
+  0001' CD 00B0'                	call	dev$dispatch	; GO TO CORRECT INIT ROUTINE
+  0004' 00BF'                   	defw	cinit0		; INIT FOR DEVICE 0
+  0006' 0118'                   	defw	null$init	; INIT FOR DEVICE 1
+  0008' 0118'                   	defw	null$init	; INIT FOR DEVICE 2
+  000A' 0118'                   	defw	null$init	; INIT FOR DEVICE 3
+  000C' 0118'                   	defw	null$init	; INIT FOR DEVICE 4
+  000E' 0118'                   	defw	null$init	; INIT FOR DEVICE 5
+  0010' 0118'                   	defw	null$init	; INIT FOR DEVICE 6
+  0012' 0118'                   	defw	null$init	; INIT FOR DEVICE 7
+  0014' 0118'                   	defw	null$init	; INIT FOR DEVICE 8
+  0016' 0118'                   	defw	null$init	; INIT FOR DEVICE 9
+  0018' 0118'                   	defw	null$init	; INIT FOR DEVICE 10
+  001A' 0118'                   	defw	null$init	; INIT FOR DEVICE 11
+  001C' 0118'                   	defw	null$init	; INIT FOR DEVICE 12
+  001E' 0118'                   	defw	null$init	; INIT FOR DEVICE 13
+  0020' 0118'                   	defw	null$init	; INIT FOR DEVICE 14
+  0022' 0118'                   	defw	null$init	; INIT FOR DEVICE 15
+                                
+                                
+                                				; ;;;; ?CI (BCI FOR BANKED)
+                                				; PHYSICAL CODE FOR DEVICE INPUT:
+                                	 if	banked
+                                bci:
+                                	 else
+  0024'                         ?ci:
+                                	 endif
+  0024' CD 00B0'                	call	dev$dispatch
+  0027' 00EA'                   	defw	ci0		; DEVICE 0 INPUT
+  0029' 0116'                   	defw	null$ci		; DEVICE 1 INPUT
+  002B' 0116'                   	defw	null$ci		; DEVICE 2 INPUT
+  002D' 0116'                   	defw	null$ci		; DEVICE 3 INPUT
+  002F' 0116'                   	defw	null$ci		; DEVICE 4 INPUT
+  0031' 0116'                   	defw	null$ci		; DEVICE 5 INPUT
+  0033' 0116'                   	defw	null$ci		; DEVICE 6 INPUT
+  0035' 0116'                   	defw	null$ci		; DEVICE 7 INPUT
+  0037' 0116'                   	defw	null$ci		; DEVICE 8 INPUT
+  0039' 0116'                   	defw	null$ci		; DEVICE 9 INPUT
+  003B' 0116'                   	defw	null$ci		; DEVICE 10 INPUT
+  003D' 0116'                   	defw	null$ci		; DEVICE 11 INPUT
+ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    5
+CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
+
+  003F' 0116'                   	defw	null$ci		; DEVICE 12 INPUT
+  0041' 0116'                   	defw	null$ci		; DEVICE 13 INPUT
+  0043' 0116'                   	defw	null$ci		; DEVICE 14 INPUT
+  0045' 0116'                   	defw	null$ci		; DEVICE 15 INPUT
+                                
+                                
+                                				; ;;;; ?CO (BCO FOR BANKED)
+                                				; PHYSICAL CODE FOR DEVICE OUTPUT:
+                                	 if	banked
+                                bco:
+                                	 else
+  0047'                         ?co:
+                                	 endif
+  0047' CD 00B0'                	call	dev$dispatch	; GO TO CORRECT DEVICE OUTPUT HANDLER
+  004A' 010B'                   	defw	co0		; DEVICE 0 OUTPUT
+  004C' 0118'                   	defw	null$co		; DEVICE 1 OUTPUT
+  004E' 0118'                   	defw	null$co		; DEVICE 2 OUTPUT
+  0050' 0118'                   	defw	null$co		; DEVICE 3 OUTPUT
+  0052' 0118'                   	defw	null$co		; DEVICE 4 OUTPUT
+  0054' 0118'                   	defw	null$co		; DEVICE 5 OUTPUT
+  0056' 0118'                   	defw	null$co		; DEVICE 6 OUTPUT
+  0058' 0118'                   	defw	null$co		; DEVICE 7 OUTPUT
+  005A' 0118'                   	defw	null$co		; DEVICE 8 OUTPUT
+  005C' 0118'                   	defw	null$co		; DEVICE 9 OUTPUT
+  005E' 0118'                   	defw	null$co		; DEVICE 10 OUTPUT
+  0060' 0118'                   	defw	null$co		; DEVICE 11 OUTPUT
+  0062' 0118'                   	defw	null$co		; DEVICE 12 OUTPUT
+  0064' 0118'                   	defw	null$co		; DEVICE 13 OUTPUT
+  0066' 0118'                   	defw	null$co		; DEVICE 14 OUTPUT
+  0068' 0118'                   	defw	null$co		; DEVICE 15 OUTPUT
+                                
+                                
+                                				; ;;;; ?CIST (BCIST FOR BANKED)
+                                				; PHYSICAL CODE FOR DEVICE INPUT STATUS:
+                                	 if	banked
+                                bcist:
+                                	 else
+  006A'                         ?cist:
+                                	 endif
+  006A' CD 00B0'                	call	dev$dispatch
+  006D' 00C0'                   	defw	cist0		; DEVICE 0 INPUT STATUS
+  006F' 0113'                   	defw	null$cist	; DEVICE 1 INPUT STATUS
+  0071' 0113'                   	defw	null$cist	; DEVICE 2 INPUT STATUS
+  0073' 0113'                   	defw	null$cist	; DEVICE 3 INPUT STATUS
+  0075' 0113'                   	defw	null$cist	; DEVICE 4 INPUT STATUS
+  0077' 0113'                   	defw	null$cist	; DEVICE 5 INPUT STATUS
+  0079' 0113'                   	defw	null$cist	; DEVICE 6 INPUT STATUS
+  007B' 0113'                   	defw	null$cist	; DEVICE 7 INPUT STATUS
+  007D' 0113'                   	defw	null$cist	; DEVICE 8 INPUT STATUS
+  007F' 0113'                   	defw	null$cist	; DEVICE 9 INPUT STATUS
+  0081' 0113'                   	defw	null$cist	; DEVICE 10 INPUT STATUS
+  0083' 0113'                   	defw	null$cist	; DEVICE 11 INPUT STATUS
+  0085' 0113'                   	defw	null$cist	; DEVICE 12 INPUT STATUS
+  0087' 0113'                   	defw	null$cist	; DEVICE 13 INPUT STATUS
+  0089' 0113'                   	defw	null$cist	; DEVICE 14 INPUT STATUS
+  008B' 0113'                   	defw	null$cist	; DEVICE 15 INPUT STATUS
+                                
+ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    6
+CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
+
+                                
+                                				; ;;;; ?COST (BCOST FOR BANKED)
+                                				; PHYSICAL CODE FOR DEVICE OUTPUT STATUS:
+                                	 if	banked
+                                bcost:
+                                	 else
+  008D'                         ?cost:
+                                	 endif
+  008D' CD 00B0'                	call	dev$dispatch	; GO TO CONSOLE OUTPUT STATUS HANDLER
+  0090' 00E7'                   	defw	cost0		; DEVICE 0 OUTPUT STATUS
+  0092' 0113'                   	defw	null$cost	; DEVICE 1 OUTPUT STATUS
+  0094' 0113'                   	defw	null$cost	; DEVICE 2 OUTPUT STATUS
+  0096' 0113'                   	defw	null$cost	; DEVICE 3 OUTPUT STATUS
+  0098' 0113'                   	defw	null$cost	; DEVICE 4 OUTPUT STATUS
+  009A' 0113'                   	defw	null$cost	; DEVICE 5 OUTPUT STATUS
+  009C' 0113'                   	defw	null$cost	; DEVICE 6 OUTPUT STATUS
+  009E' 0113'                   	defw	null$cost	; DEVICE 7 OUTPUT STATUS
+  00A0' 0113'                   	defw	null$cost	; DEVICE 8 OUTPUT STATUS
+  00A2' 0113'                   	defw	null$cost	; DEVICE 9 OUTPUT STATUS
+  00A4' 0113'                   	defw	null$cost	; DEVICE 10 OUTPUT STATUS
+  00A6' 0113'                   	defw	null$cost	; DEVICE 11 OUTPUT STATUS
+  00A8' 0113'                   	defw	null$cost	; DEVICE 12 OUTPUT STATUS
+  00AA' 0113'                   	defw	null$cost	; DEVICE 13 OUTPUT STATUS
+  00AC' 0113'                   	defw	null$cost	; DEVICE 14 OUTPUT STATUS
+  00AE' 0113'                   	defw	null$cost	; DEVICE 15 OUTPUT STATUS
+                                
+                                
+                                				; ;;;; DEV$DISPATCH
+                                				; ROUTINE JUMPS TO CORRECT DEVICE HANDLER:
+  00B0'                         dev$dispatch:
+  00B0' 78                      	ld	a,b		; GET DEVICE # TO [A]
+  00B1' 32 0119'                	ld	(dev$code),a	; SAVE FOR LATER USE
+  00B4' 87                      	add	a,a		; X2 FOR WORD OFFSET
+  00B5' E1                      	pop	hl		; RETURN ADDRESS IS 1ST PARAMETER ADDRESS
+  00B6' 5F                      	ld	e,a		; SET UP OFFSET IN [DE]
+  00B7' 16 00                   	ld	d,0
+  00B9' 19                      	add	hl,de		; [HL] = PTR TO HANDLER ADDRESS
+  00BA' 5E                      	ld	e,(hl)		; GET HANDLER ADDRESS TO [DE]
+  00BB' 23                      	inc	hl
+  00BC' 56                      	ld	d,(hl)
+  00BD' EB                      	ex	de,hl		; PUT IN [HL]
+  00BE' E9                      	jp	(hl)		; AND DISPATCH TO IT...
+                                
+                                
+                                				; ;;;;
+                                				; ;;;; PHYSICAL DEVICE HANDLER CODE:
+                                				; ;;;;
+                                	
+                                ; ----------------------------------------------------------
+                                ;
+                                ; Z80-MBC2 I/O
+                                ;
+                                ; ----------------------------------------------------------
+                                
+                                
+  00BF'                         cinit0:				; DEVICE 0 INITIALIZATION (Z80-MBC2) 
+  00BF' C9                      	ret			; Nothing to do
+ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    7
+CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
+
+                                
+                                ; 
+                                ;<<<<<<<<<<<<<<<<<<< MAIN CONSOLE STATUS ROUTINE (Z80-MBC2) >>>>>>>>>>>>>>>>>>>
+                                ;
+                                
+                                
+  00C0'                         cist0:				; DEVICE 0 INPUT STATUS
+  00C0' 3A 00E6'                	ld	a,(?cnstflg)	; A = CONST mode flag
+  00C3' B7                      	or	a		; CONST mode flag = 0?
+  00C4' 28 0D                   	jr	z,const7	; Yes, jump to 7 bit CONST routine
+  00C6'                         const8:				; No, 8 bit mode CONST routine
+  00C6' 3E 83                   	ld	a, sysflag$opc	; A = SYSFLAG opcode
+  00C8' D3 01                   	out	(sto$opcd),a	; Write the opcode
+  00CA' DB 00                   	in	a,(exc$rd$opcd)	; Read SYSFLAG data into A
+  00CC' E6 04                   	and	04h		; Rx serial buffer empty (D2 = 0)?
+  00CE' 28 13                   	jr	z,noinchr	; Yes, jump
+                                				; No, set char ready flag
+                                
+  00D0'                         inchr:				; Set char ready flag
+  00D0' 3E FF                   	ld	a, 0ffh		; Return CP/M a char ready flag ($FF)
+  00D2' C9                      	ret
+                                
+  00D3'                         const7:
+  00D3' 3A 00E5'                	ld	a,(inchrbuf)	; A = previous char read by CONST, if any
+  00D6' FE FF                   	cp	0ffh		; Is = $FF ($FF from UART = no char)?
+  00D8' 20 F6                   	jr	nz,inchr	; No, jump (char already read and ready)
+  00DA' DB 01                   	in	a,(serial$rx)	; Yes, Read a char from "virtual" UART
+  00DC' 32 00E5'                	ld	(inchrbuf),a	; Store it
+  00DF' FE FF                   	cp	0ffh		; Is = $FF ($FF from UART = no char)?
+  00E1' 20 ED                   	jr	nz,inchr	; No, set char ready flag
+                                				; Yes, set char not ready flag
+                                
+  00E3'                         noinchr:			; Set char not ready flag
+  00E3' AF                      	xor	a		; Set no char flag (A = 0)
+  00E4' C9                      	ret			; Return CP/M no char flag ($00)
+                                	
+  00E5'                         inchrbuf:
+                                				; Last read char by CONST ($FF = no char)
+  00E5' FF                      	defb	0ffh		; Initialized as $FF
+  00E6'                         ?cnstflg:
+  00E6' 00                      	defb	0h		; CONST mode flag. If = 1 the full 8 bit mode is ac
+                                				; if = 0 the "legacy" 7 bit mode is used (not really 7 bit
+                                				; but only the $ff char is ignored and used as "no char" flag ***
+                                
+  00E7'                         cost0:				; DEVICE 0 OUTPUT STATUS (Z80-MBC2) 
+  00E7' 3E FF                   	ld	a, 0ffh		; Always ready to TX
+  00E9' C9                      	ret
+                                
+                                ;
+                                ;<<<<<<<<<<<<<<<<<<<< MAIN CONSOLE INPUT ROUTINE (Z80-MBC2) >>>>>>>>>>>>>>>>>>>
+                                ;
+                                
+  00EA'                         ci0:				; DEVICE 0 INPUT
+  00EA' 3A 00E5'                	ld	a,(inchrbuf)	; A = previous char read by CONST, if any
+  00ED' FE FF                   	cp	0ffh		; Is = $FF ($FF from UART = no char)?
+  00EF' 28 08                   	jr	z,getchr	; Yes, jump to read a char
+  00F1' F5                      	push	af		; No, InChrBuf = $FF (clear buffer)
+ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    8
+CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
+
+  00F2' 3E FF                   	ld	a, 0ffh
+  00F4' 32 00E5'                	ld	(inchrbuf),a
+  00F7' F1                      	pop	af		; Return with the previously saved char
+  00F8' C9                      	ret
+                                	
+  00F9'                         getchr:
+  00F9' DB 01                   	in	a,(serial$rx)	; Read a char from UART
+  00FB' FE FF                   	cp	0ffh		; Is = $FF ($FF from UART = no char)?
+  00FD' C0                      	ret	nz		; No, retun with it in A
+                                				; Yes, check if ffH is a valid char
+                                
+  00FE'                         chkff:				; Check if ffH is a valid char
+  00FE' 3E 83                   	ld	a, sysflag$opc	; A = SYSFLAG opcode
+  0100' D3 01                   	out	(sto$opcd),a	; Write the opcode
+  0102' DB 00                   	in	a,(exc$rd$opcd)	; Read SYSFLAG data into A
+  0104' E6 08                   	and	08h		; It was a "serial buffer empty" flag (D3 = 1)?
+  0106' 20 F1                   	jr	nz,getchr	; Yes, jump and wait for a char
+  0108' 3E FF                   	ld	a, 0ffh		; No, it is a valid ffH char
+  010A' C9                      	ret			; Retun with it in A
+                                
+                                	
+                                ;
+                                ;<<<<<<<<<<<<<<<<<<<<<< MAIN CONSOLE OUTPUT ROUTINE (Z80-MBC2) >>>>>>>>>>>>>>>>
+                                ;
+                                
+  010B'                         co0:				; DEVICE 0 OUTPUT
+  010B' 3E 01                   	ld	a, sertx$opc	; A = SERIAL TX opcode
+  010D' D3 01                   	out	(sto$opcd),a	; Write the opcode
+  010F' 79                      	ld	a, c
+  0110' D3 00                   	out	(exc$wr$opcd),a	; Send A to serial Tx
+  0112' C9                      	ret
+                                
+                                ;
+                                ; -------------------------------------------------------------------------
+                                ;
+                                
+                                				; ;;;; NULL ROUTINES:
+  0113'                         null$cist:
+  0113'                         null$cost:
+  0113' AF                      	xor	a		; RETURN A FALSE STATUS RESULT
+  0114' 18 02                   	jr null$ret
+  0116'                         null$ci:
+  0116' 3E 1A                   	ld	a,1ah		; FOR INPUT RETURN A CNTL-Z (EOF)
+  0118'                         null$init:
+  0118'                         null$co:
+  0118'                         null$ret:
+  0118' C9                      	ret			; HARMLESS RETURN
+                                
+                                
+                                				; STORAGE FOR DEVICE CODE -- CAN RESIDE IN SAME SEGMENT AS THE BULK
+                                				;  OF CHARACTER I/O ROUTINES:
+  0119'                         dev$code:
+  0119' ( 0001 )                	defs	1
+                                
+                                				; ;;;; CHRTBL
+                                				; CHARACTER DEVICE TABLE
+                                				; --------------------------
+ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    9
+CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
+
+                                	cseg			; MUST RESIDE IN COMMON MEMORY
+                                				; --------------------------
+                                	
+  011A'                         @ctbl:
+  011A' 43 52 54 20 20 20       	defb	'CRT   '	; CONSOLE (DEVICE 0)
+  0120' 03                      	defb	mb$in$out
+  0121' 00                      	defb	baud$none
+                                
+  0001  =                       max$devices equ	($-@ctbl)/8	; # DEVICES IN TABLE
+  0122' 00                      	defb	0		; TABLE TERMINATOR
+                                
+                                  if banked
+                                				; OTHER DATA AREAS:
+                                	defs	24		; CHARACTER I/O LOCAL STACK
+                                iosp	equ	$
+                                spsave:	defs	2
+                                
+                                  endif
+                                
+  0000  =                       	end
+
+Errors: 0
+ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page   10
+
+Symbols:
+?CI .............. 0024'P ?CINIT ........... 0000'P ?CIST ............ 006A'P
+?CNSTFLG ......... 00E6'P ?CO .............. 0047'P ?COST ............ 008D'P
+?PMSG ............ 0000#  @CTBL ............ 011A'P BANKED ........... 0000 
+BAUD$110 ......... 0003   BAUD$1200 ........ 0008   BAUD$134 ......... 0004 
+BAUD$150 ......... 0005   BAUD$1800 ........ 0009   BAUD$19200 ....... 000F 
+BAUD$2400 ........ 000A   BAUD$300 ......... 0006   BAUD$3600 ........ 000B 
+BAUD$4800 ........ 000C   BAUD$50 .......... 0001   BAUD$600 ......... 0007 
+BAUD$7200 ........ 000D   BAUD$75 .......... 0002   BAUD$9600 ........ 000E 
+BAUD$NONE ........ 0000   CHKFF ............ 00FE'  CI0 .............. 00EA'
+CINIT0 ........... 00BF'  CIST0 ............ 00C0'  CO0 .............. 010B'
+CONST7 ........... 00D3'  CONST8 ........... 00C6'  COST0 ............ 00E7'
+DATETIM$OPC ...... 0084   DEV$CODE ......... 0119'  DEV$DISPATCH ..... 00B0'
+ERRDSK$OPC ....... 0085   EXC$RD$OPCD ...... 0000   EXC$WR$OPCD ...... 0000 
+FALSE ............ 0000   GETCHR ........... 00F9'  INCHR ............ 00D0'
+INCHRBUF ......... 00E5'  MAX$DEVICES ...... 0001   MB$IN$OUT ........ 0003 
+MB$INPUT ......... 0001   MB$OUTPUT ........ 0002   MB$SERIAL ........ 0008 
+MB$SOFT$BAUD ..... 0004   MB$XON$XOFF ...... 0010   NOINCHR .......... 00E3'
+NULL$CI .......... 0116'  NULL$CIST ........ 0113'  NULL$CO .......... 0118'
+NULL$COST ........ 0113'  NULL$INIT ........ 0118'  NULL$RET ......... 0118'
+RDSECT$OPC ....... 0086   SDMOUNT$OPC ...... 0087   SELDISK$OPC ...... 0009 
+SELSECT$OPC ...... 000B   SELTRCK$OPC ...... 000A   SERIAL$RX ........ 0001 
+SERTX$OPC ........ 0001   STO$OPCD ......... 0001   SYSFLAG$OPC ...... 0083 
+TRUE ............. FFFF   WRTSECT$OPC ...... 000C   
+

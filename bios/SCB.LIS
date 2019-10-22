@@ -1,0 +1,69 @@
+ZSM 4.1	Source file: SCB      	22-Oct-2019  09:58:48	Page    1
+System Control Block Definition for CP/M3 BIOS
+
+                                	.z80
+                                ;	Converted to Z80 mnemonics via XIZ by Tony Nicholson
+                                ;	Assemble using Microsoft M80 or Hector Peraza's ZSM4
+                                ;
+                                
+                                	public @civec, @covec, @aivec, @aovec, @lovec, @bnkbf
+                                	public @crdma, @crdsk, @vinfo, @resel, @fx, @usrcd
+                                	public @mltio, @ermde, @erdsk, @media, @bflgs
+                                	public @date, @hour, @min, @sec, ?erjmp, @mxtpa
+                                
+                                
+  FE00  =                       scb$base equ	0fe00h		; Base of the SCB
+                                
+  FE22  =                       @civec	equ	scb$base+22h	; Console Input Redirection 
+                                				; Vector (word, r/w)
+  FE24  =                       @covec	equ	scb$base+24h	; Console Output Redirection 
+                                				; Vector (word, r/w)
+  FE26  =                       @aivec	equ	scb$base+26h	; Auxiliary Input Redirection 
+                                				; Vector (word, r/w)
+  FE28  =                       @aovec	equ	scb$base+28h	; Auxiliary Output Redirection 
+                                				; Vector (word, r/w)
+  FE2A  =                       @lovec	equ	scb$base+2ah	; List Output Redirection 
+                                				; Vector (word, r/w)
+  FE35  =                       @bnkbf	equ	scb$base+35h	; Address of 128 Byte Buffer 
+                                				; for Banked BIOS (word, r/o)
+  FE3C  =                       @crdma	equ	scb$base+3ch	; Current DMA Address 
+                                				; (word, r/o)
+  FE3E  =                       @crdsk	equ	scb$base+3eh	; Current Disk (byte, r/o)
+  FE3F  =                       @vinfo	equ	scb$base+3fh	; BDOS Variable "INFO" 
+                                				; (word, r/o)
+  FE41  =                       @resel	equ	scb$base+41h	; FCB Flag (byte, r/o)
+  FE43  =                       @fx	equ	scb$base+43h	; BDOS Function for Error 
+                                				; Messages (byte, r/o)
+  FE44  =                       @usrcd	equ	scb$base+44h	; Current User Code (byte, r/o)
+  FE4A  =                       @mltio	equ	scb$base+4ah	; Current Multi-Sector Count
+                                				; (byte,r/w)
+  FE4B  =                       @ermde	equ	scb$base+4bh	; BDOS Error Mode (byte, r/o)
+  FE51  =                       @erdsk	equ	scb$base+51h	; BDOS Error Disk (byte,r/o)
+  FE54  =                       @media	equ	scb$base+54h	; Set by BIOS to indicate
+                                				; open door (byte,r/w)
+  FE57  =                       @bflgs	equ	scb$base+57h	; BDOS Message Size Flag (byte,r/o)  
+  FE58  =                       @date	equ	scb$base+58h	; Date in Days Since 1 Jan 78 
+                                				; (word, r/w)
+  FE5A  =                       @hour	equ	scb$base+5ah	; Hour in BCD (byte, r/w)
+  FE5B  =                       @min	equ	scb$base+5bh	; Minute in BCD (byte, r/w)
+  FE5C  =                       @sec	equ	scb$base+5ch	; Second in BCD (byte, r/w)
+  FE5F  =                       ?erjmp	equ	scb$base+5fh	; BDOS Error Message Jump
+                                				; (word, r/w)
+  FE62  =                       @mxtpa	equ	scb$base+62h	; Top of User TPA 
+                                				; (address at 6,7)(word, r/o)
+  0000  =                       	end
+
+Errors: 0
+ZSM 4.1	Source file: SCB      	22-Oct-2019  09:58:48	Page    2
+
+Symbols:
+?ERJMP ........... FE5F P @AIVEC ........... FE26 P @AOVEC ........... FE28 P
+@BFLGS ........... FE57 P @BNKBF ........... FE35 P @CIVEC ........... FE22 P
+@COVEC ........... FE24 P @CRDMA ........... FE3C P @CRDSK ........... FE3E P
+@DATE ............ FE58 P @ERDSK ........... FE51 P @ERMDE ........... FE4B P
+@FX .............. FE43 P @HOUR ............ FE5A P @LOVEC ........... FE2A P
+@MEDIA ........... FE54 P @MIN ............. FE5B P @MLTIO ........... FE4A P
+@MXTPA ........... FE62 P @RESEL ........... FE41 P @SEC ............. FE5C P
+@USRCD ........... FE44 P @VINFO ........... FE3F P SCB$BASE ......... FE00 
+
+

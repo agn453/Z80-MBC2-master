@@ -1,0 +1,783 @@
+ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    1
+CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
+
+                                	.z80
+                                ;
+                                ;	Converted to Z80 mnemonics via XIZ by Tony Nicholson
+                                ;	added checksum vector size of 0 to dhp macros since
+                                ;	all drives are permanently mounted.
+                                ;
+                                ;	Assemble using Microsoft M80 or Hector Peraza's ZSM4
+                                ;
+                                ;******************************************************************************
+                                ;
+                                ; VDISK.ASM - S200918
+                                ; CP/M 3.0 VIRTUAL DISK ON SD BIOS MODULE FOR THE Z80-MBC2 (HW ref. A040618)
+                                ;
+                                ; Required IOS S220718-R190918 (or newer revisions until otherwise stated)
+                                ;
+                                ; NOTE: Use the RMAC.COM relocatable assembler
+                                ;
+                                ;
+                                ;
+                                ;******************************************************************************
+                                
+                                				;  DEFINE LOGICAL VALUES:
+  FFFF  =                       true	equ	-1
+  0000  =                       false	equ	not true
+                                
+                                				;  DETERMINE IF BANKED SELECT OR NOT
+  FFFF  =                       banked	equ	true		; <------ BANKED/NON-BANKED SWITCH
+                                
+  0007  =                       bell	equ	07h
+  000D  =                       cr	equ	0dh
+  000A  =                       lf	equ	0ah
+                                
+                                ; -----------------------------------------------------------------------------
+                                ;
+                                ; Z80-MBC2 IOS equates
+                                ;
+                                ; -----------------------------------------------------------------------------
+                                
+  0000  =                       exc$wr$opcd equ	000h		; Address of the EXECUTE WRITE OPCODE write port
+  0000  =                       exc$rd$opcd equ	000h		; Address of the EXECUTE READ OPCODE read port
+  0001  =                       sto$opcd equ	001h		; Address of the STORE OPCODE write port
+  0001  =                       serial$rx equ	001h		; Address of the SERIAL RX read port
+  0001  =                       sertx$opc equ	001h		; SERIAL TX opcode
+  0009  =                       seldisk$opc equ	009h		; SELDISK opcode
+  000A  =                       seltrck$opc equ	00ah		; SELTRACK opcode
+  000B  =                       selsect$opc equ	00bh		; SELSECT opcode
+  000C  =                       wrtsect$opc equ	00ch		; WRITESECT opcode
+  0083  =                       sysflag$opc equ	083h		; SYSFLAG opcode
+  0084  =                       datetim$opc equ	084h		; DATETIME opcode
+  0085  =                       errdsk$opc equ	085h		; ERRDISK opcode
+  0086  =                       rdsect$opc equ	086h		; READSECT opcode
+  0087  =                       sdmount$opc equ	087h		; SDMOUNT opcode
+                                
+                                	
+                                	public  @dtbl
+                                
+                                				; DEFINE EXTERNAL LABELS:
+ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    2
+CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
+
+                                	extrn   @adrv,@rdrv
+                                	extrn   @dma,@trk,@sect
+                                	extrn   @cbnk
+                                	extrn   @dbnk		; BANK FOR DMA OPERATION
+                                	extrn   @ermde		; BDOS ERROR MODE
+                                	extrn   ?wboot		; WARM BOOT VECTOR
+                                	extrn   ?pmsg		; PRINT MESSAGE @<HL> UP TO 00, SAVES
+                                				; [BC] AND [DE]
+                                	extrn   ?pderr		; PRINT BIOS DISK ERROR HEADER
+                                	extrn   ?conin,?cono	; CONSOLE IN AND OUT
+                                	extrn   ?const		; CONSOLE STATUS
+                                	
+                                	 if	banked
+                                	extrn   ?bnksl		; SELECT PROCESSOR MEMORY BANK
+                                	 endif
+                                
+                                				; INCLUDE CP/M 3.0 DISK DEFINITION MACROS:
+                             C  	include  cpm3m80.lib
+                             C  	.list
+                                
+                                	 if	banked
+                                				; --------------------------
+                                	dseg			; PUT IN OP SYS BANK IF BANKING
+                                				; --------------------------
+                                	 endif
+                                
+                                ; -----------------------------------------------------------------------------
+                                ;
+                                ; EXTENDED DISK PARAMETER HEADER FOR 16 VIRTUAL DISKS (Z80-MBC2)
+                                ;
+                                ; -----------------------------------------------------------------------------
+                                
+                                				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 0:
+                                				; 
+  0000" 0253"                   	defw	hdwrt		; HARD DISK WRITE ROUTINE
+  0002" 0268"                   	defw	hdrd		; HARD DISK READ ROUTINE
+  0004" 0251"                   	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+  0006" 0250"                   	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+  0008" 00                      	defb	0		; RELATIVE DRIVE 0 ON THIS CONTROLLER
+  0009" 00                      	defb	0		; MEDIA TYPE
+                                
+  000A"                         dph0:	dph     0,idehd$dpb0,0
+  000A" 0000                  + 	defw	0			; translate table address
+  000C" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
+  0012" 00 00 00              + 
+  0015" 00                    + 	defb	0			; media flag
+  0016" 0000'                 + 	defw	idehd$dpb0			; disk parameter block
+  0018" 0000                  + 	  defw	00000h			; CSV for permanently mounted drive
+  001A" FFFE                  + 	  defw	  0fffeh		; alloc vector allocated by GENCPM
+  001C" FFFE  FFFE  FFFE      + 	defw	0fffeh,0fffeh,0fffeh	; dirbcb, dtabcb, hash allocated
+  0022" 00                    + 	defb	0			; hash bank
+  0023" ( 0000 )              + ??0000:	  defs	  0		; checksum vector
+                                
+                                ; -----------------------------------------------------------------------------
+                                
+                                				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 1:
+                                				; 
+ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    3
+CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
+
+  0023" 0253"                   	defw	hdwrt		; HARD DISK WRITE ROUTINE
+  0025" 0268"                   	defw	hdrd		; HARD DISK READ ROUTINE
+  0027" 0251"                   	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+  0029" 0250"                   	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+  002B" 01                      	defb	1		; RELATIVE DRIVE 1 ON THIS CONTROLLER
+  002C" 00                      	defb	0		; MEDIA TYPE
+                                	
+  002D"                         dph1:	dph     0,idehd$dpb0,0
+  002D" 0000                  + 	defw	0			; translate table address
+  002F" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
+  0035" 00 00 00              + 
+  0038" 00                    + 	defb	0			; media flag
+  0039" 0000'                 + 	defw	idehd$dpb0			; disk parameter block
+  003B" 0000                  + 	  defw	00000h			; CSV for permanently mounted drive
+  003D" FFFE                  + 	  defw	  0fffeh		; alloc vector allocated by GENCPM
+  003F" FFFE  FFFE  FFFE      + 	defw	0fffeh,0fffeh,0fffeh	; dirbcb, dtabcb, hash allocated
+  0045" 00                    + 	defb	0			; hash bank
+  0046" ( 0000 )              + ??0002:	  defs	  0		; checksum vector
+                                	
+                                ; -----------------------------------------------------------------------------
+                                
+                                				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 2:
+                                				; 
+  0046" 0253"                   	defw	hdwrt		; HARD DISK WRITE ROUTINE
+  0048" 0268"                   	defw	hdrd		; HARD DISK READ ROUTINE
+  004A" 0251"                   	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+  004C" 0250"                   	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+  004E" 02                      	defb	2		; RELATIVE DRIVE 2 ON THIS CONTROLLER
+  004F" 00                      	defb	0		; MEDIA TYPE
+                                	
+  0050"                         dph2:	dph     0,idehd$dpb0,0
+  0050" 0000                  + 	defw	0			; translate table address
+  0052" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
+  0058" 00 00 00              + 
+  005B" 00                    + 	defb	0			; media flag
+  005C" 0000'                 + 	defw	idehd$dpb0			; disk parameter block
+  005E" 0000                  + 	  defw	00000h			; CSV for permanently mounted drive
+  0060" FFFE                  + 	  defw	  0fffeh		; alloc vector allocated by GENCPM
+  0062" FFFE  FFFE  FFFE      + 	defw	0fffeh,0fffeh,0fffeh	; dirbcb, dtabcb, hash allocated
+  0068" 00                    + 	defb	0			; hash bank
+  0069" ( 0000 )              + ??0004:	  defs	  0		; checksum vector
+                                	
+                                ; -----------------------------------------------------------------------------
+                                
+                                				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 3:
+                                				; 
+  0069" 0253"                   	defw	hdwrt		; HARD DISK WRITE ROUTINE
+  006B" 0268"                   	defw	hdrd		; HARD DISK READ ROUTINE
+  006D" 0251"                   	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+  006F" 0250"                   	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+  0071" 03                      	defb	3		; RELATIVE DRIVE 3 ON THIS CONTROLLER
+  0072" 00                      	defb	0		; MEDIA TYPE
+                                	
+  0073"                         dph3:	dph     0,idehd$dpb0,0
+  0073" 0000                  + 	defw	0			; translate table address
+  0075" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
+  007B" 00 00 00              + 
+ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    4
+CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
+
+  007E" 00                    + 	defb	0			; media flag
+  007F" 0000'                 + 	defw	idehd$dpb0			; disk parameter block
+  0081" 0000                  + 	  defw	00000h			; CSV for permanently mounted drive
+  0083" FFFE                  + 	  defw	  0fffeh		; alloc vector allocated by GENCPM
+  0085" FFFE  FFFE  FFFE      + 	defw	0fffeh,0fffeh,0fffeh	; dirbcb, dtabcb, hash allocated
+  008B" 00                    + 	defb	0			; hash bank
+  008C" ( 0000 )              + ??0006:	  defs	  0		; checksum vector
+                                	
+                                ; -----------------------------------------------------------------------------
+                                
+                                				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 4:
+                                				; 
+  008C" 0253"                   	defw	hdwrt		; HARD DISK WRITE ROUTINE
+  008E" 0268"                   	defw	hdrd		; HARD DISK READ ROUTINE
+  0090" 0251"                   	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+  0092" 0250"                   	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+  0094" 04                      	defb	4		; RELATIVE DRIVE 4 ON THIS CONTROLLER
+  0095" 00                      	defb	0		; MEDIA TYPE
+                                	
+  0096"                         dph4:	dph     0,idehd$dpb0,0
+  0096" 0000                  + 	defw	0			; translate table address
+  0098" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
+  009E" 00 00 00              + 
+  00A1" 00                    + 	defb	0			; media flag
+  00A2" 0000'                 + 	defw	idehd$dpb0			; disk parameter block
+  00A4" 0000                  + 	  defw	00000h			; CSV for permanently mounted drive
+  00A6" FFFE                  + 	  defw	  0fffeh		; alloc vector allocated by GENCPM
+  00A8" FFFE  FFFE  FFFE      + 	defw	0fffeh,0fffeh,0fffeh	; dirbcb, dtabcb, hash allocated
+  00AE" 00                    + 	defb	0			; hash bank
+  00AF" ( 0000 )              + ??0008:	  defs	  0		; checksum vector
+                                	
+                                ; -----------------------------------------------------------------------------
+                                
+                                				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 5:
+                                				; 
+  00AF" 0253"                   	defw	hdwrt		; HARD DISK WRITE ROUTINE
+  00B1" 0268"                   	defw	hdrd		; HARD DISK READ ROUTINE
+  00B3" 0251"                   	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+  00B5" 0250"                   	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+  00B7" 05                      	defb	5		; RELATIVE DRIVE 5 ON THIS CONTROLLER
+  00B8" 00                      	defb	0		; MEDIA TYPE
+                                	
+  00B9"                         dph5:	dph     0,idehd$dpb0,0
+  00B9" 0000                  + 	defw	0			; translate table address
+  00BB" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
+  00C1" 00 00 00              + 
+  00C4" 00                    + 	defb	0			; media flag
+  00C5" 0000'                 + 	defw	idehd$dpb0			; disk parameter block
+  00C7" 0000                  + 	  defw	00000h			; CSV for permanently mounted drive
+  00C9" FFFE                  + 	  defw	  0fffeh		; alloc vector allocated by GENCPM
+  00CB" FFFE  FFFE  FFFE      + 	defw	0fffeh,0fffeh,0fffeh	; dirbcb, dtabcb, hash allocated
+  00D1" 00                    + 	defb	0			; hash bank
+  00D2" ( 0000 )              + ??000A:	  defs	  0		; checksum vector
+                                	
+                                ; -----------------------------------------------------------------------------
+                                
+                                				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 6:
+ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    5
+CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
+
+                                				; 
+  00D2" 0253"                   	defw	hdwrt		; HARD DISK WRITE ROUTINE
+  00D4" 0268"                   	defw	hdrd		; HARD DISK READ ROUTINE
+  00D6" 0251"                   	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+  00D8" 0250"                   	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+  00DA" 06                      	defb	6		; RELATIVE DRIVE 6 ON THIS CONTROLLER
+  00DB" 00                      	defb	0		; MEDIA TYPE
+                                	
+  00DC"                         dph6:	dph     0,idehd$dpb0,0
+  00DC" 0000                  + 	defw	0			; translate table address
+  00DE" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
+  00E4" 00 00 00              + 
+  00E7" 00                    + 	defb	0			; media flag
+  00E8" 0000'                 + 	defw	idehd$dpb0			; disk parameter block
+  00EA" 0000                  + 	  defw	00000h			; CSV for permanently mounted drive
+  00EC" FFFE                  + 	  defw	  0fffeh		; alloc vector allocated by GENCPM
+  00EE" FFFE  FFFE  FFFE      + 	defw	0fffeh,0fffeh,0fffeh	; dirbcb, dtabcb, hash allocated
+  00F4" 00                    + 	defb	0			; hash bank
+  00F5" ( 0000 )              + ??000C:	  defs	  0		; checksum vector
+                                	
+                                ; -----------------------------------------------------------------------------
+                                
+                                				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 7:
+                                				; 
+  00F5" 0253"                   	defw	hdwrt		; HARD DISK WRITE ROUTINE
+  00F7" 0268"                   	defw	hdrd		; HARD DISK READ ROUTINE
+  00F9" 0251"                   	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+  00FB" 0250"                   	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+  00FD" 07                      	defb	7		; RELATIVE DRIVE 7 ON THIS CONTROLLER
+  00FE" 00                      	defb	0		; MEDIA TYPE
+                                	
+  00FF"                         dph7:	dph     0,idehd$dpb0,0
+  00FF" 0000                  + 	defw	0			; translate table address
+  0101" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
+  0107" 00 00 00              + 
+  010A" 00                    + 	defb	0			; media flag
+  010B" 0000'                 + 	defw	idehd$dpb0			; disk parameter block
+  010D" 0000                  + 	  defw	00000h			; CSV for permanently mounted drive
+  010F" FFFE                  + 	  defw	  0fffeh		; alloc vector allocated by GENCPM
+  0111" FFFE  FFFE  FFFE      + 	defw	0fffeh,0fffeh,0fffeh	; dirbcb, dtabcb, hash allocated
+  0117" 00                    + 	defb	0			; hash bank
+  0118" ( 0000 )              + ??000E:	  defs	  0		; checksum vector
+                                	
+                                ; -----------------------------------------------------------------------------
+                                
+                                				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 8:
+                                				; 
+  0118" 0253"                   	defw	hdwrt		; HARD DISK WRITE ROUTINE
+  011A" 0268"                   	defw	hdrd		; HARD DISK READ ROUTINE
+  011C" 0251"                   	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+  011E" 0250"                   	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+  0120" 08                      	defb	8		; RELATIVE DRIVE 8 ON THIS CONTROLLER
+  0121" 00                      	defb	0		; MEDIA TYPE
+                                	
+  0122"                         dph8:	dph     0,idehd$dpb0,0
+  0122" 0000                  + 	defw	0			; translate table address
+  0124" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
+ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    6
+CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
+
+  012A" 00 00 00              + 
+  012D" 00                    + 	defb	0			; media flag
+  012E" 0000'                 + 	defw	idehd$dpb0			; disk parameter block
+  0130" 0000                  + 	  defw	00000h			; CSV for permanently mounted drive
+  0132" FFFE                  + 	  defw	  0fffeh		; alloc vector allocated by GENCPM
+  0134" FFFE  FFFE  FFFE      + 	defw	0fffeh,0fffeh,0fffeh	; dirbcb, dtabcb, hash allocated
+  013A" 00                    + 	defb	0			; hash bank
+  013B" ( 0000 )              + ??0010:	  defs	  0		; checksum vector
+                                	
+                                ; -----------------------------------------------------------------------------
+                                
+                                				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 9:
+                                				; 
+  013B" 0253"                   	defw	hdwrt		; HARD DISK WRITE ROUTINE
+  013D" 0268"                   	defw	hdrd		; HARD DISK READ ROUTINE
+  013F" 0251"                   	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+  0141" 0250"                   	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+  0143" 09                      	defb	9		; RELATIVE DRIVE 9 ON THIS CONTROLLER
+  0144" 00                      	defb	0		; MEDIA TYPE
+                                	
+  0145"                         dph9:	dph     0,idehd$dpb0,0
+  0145" 0000                  + 	defw	0			; translate table address
+  0147" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
+  014D" 00 00 00              + 
+  0150" 00                    + 	defb	0			; media flag
+  0151" 0000'                 + 	defw	idehd$dpb0			; disk parameter block
+  0153" 0000                  + 	  defw	00000h			; CSV for permanently mounted drive
+  0155" FFFE                  + 	  defw	  0fffeh		; alloc vector allocated by GENCPM
+  0157" FFFE  FFFE  FFFE      + 	defw	0fffeh,0fffeh,0fffeh	; dirbcb, dtabcb, hash allocated
+  015D" 00                    + 	defb	0			; hash bank
+  015E" ( 0000 )              + ??0012:	  defs	  0		; checksum vector
+                                	
+                                ; -----------------------------------------------------------------------------
+                                
+                                				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 10:
+                                				; 
+  015E" 0253"                   	defw	hdwrt		; HARD DISK WRITE ROUTINE
+  0160" 0268"                   	defw	hdrd		; HARD DISK READ ROUTINE
+  0162" 0251"                   	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+  0164" 0250"                   	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+  0166" 0A                      	defb	10		; RELATIVE DRIVE 10 ON THIS CONTROLLER
+  0167" 00                      	defb	0		; MEDIA TYPE
+                                	
+  0168"                         dph10:	dph     0,idehd$dpb0,0
+  0168" 0000                  + 	defw	0			; translate table address
+  016A" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
+  0170" 00 00 00              + 
+  0173" 00                    + 	defb	0			; media flag
+  0174" 0000'                 + 	defw	idehd$dpb0			; disk parameter block
+  0176" 0000                  + 	  defw	00000h			; CSV for permanently mounted drive
+  0178" FFFE                  + 	  defw	  0fffeh		; alloc vector allocated by GENCPM
+  017A" FFFE  FFFE  FFFE      + 	defw	0fffeh,0fffeh,0fffeh	; dirbcb, dtabcb, hash allocated
+  0180" 00                    + 	defb	0			; hash bank
+  0181" ( 0000 )              + ??0014:	  defs	  0		; checksum vector
+                                	
+                                ; -----------------------------------------------------------------------------
+                                
+ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    7
+CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
+
+                                				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 11:
+                                				; 
+  0181" 0253"                   	defw	hdwrt		; HARD DISK WRITE ROUTINE
+  0183" 0268"                   	defw	hdrd		; HARD DISK READ ROUTINE
+  0185" 0251"                   	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+  0187" 0250"                   	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+  0189" 0B                      	defb	11		; RELATIVE DRIVE 11 ON THIS CONTROLLER
+  018A" 00                      	defb	0		; MEDIA TYPE
+                                	
+  018B"                         dph11:	dph     0,idehd$dpb0,0
+  018B" 0000                  + 	defw	0			; translate table address
+  018D" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
+  0193" 00 00 00              + 
+  0196" 00                    + 	defb	0			; media flag
+  0197" 0000'                 + 	defw	idehd$dpb0			; disk parameter block
+  0199" 0000                  + 	  defw	00000h			; CSV for permanently mounted drive
+  019B" FFFE                  + 	  defw	  0fffeh		; alloc vector allocated by GENCPM
+  019D" FFFE  FFFE  FFFE      + 	defw	0fffeh,0fffeh,0fffeh	; dirbcb, dtabcb, hash allocated
+  01A3" 00                    + 	defb	0			; hash bank
+  01A4" ( 0000 )              + ??0016:	  defs	  0		; checksum vector
+                                	
+                                ; -----------------------------------------------------------------------------
+                                
+                                				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 12:
+                                				; 
+  01A4" 0253"                   	defw	hdwrt		; HARD DISK WRITE ROUTINE
+  01A6" 0268"                   	defw	hdrd		; HARD DISK READ ROUTINE
+  01A8" 0251"                   	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+  01AA" 0250"                   	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+  01AC" 0C                      	defb	12		; RELATIVE DRIVE 12 ON THIS CONTROLLER
+  01AD" 00                      	defb	0		; MEDIA TYPE
+                                	
+  01AE"                         dph12:	dph     0,idehd$dpb0,0
+  01AE" 0000                  + 	defw	0			; translate table address
+  01B0" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
+  01B6" 00 00 00              + 
+  01B9" 00                    + 	defb	0			; media flag
+  01BA" 0000'                 + 	defw	idehd$dpb0			; disk parameter block
+  01BC" 0000                  + 	  defw	00000h			; CSV for permanently mounted drive
+  01BE" FFFE                  + 	  defw	  0fffeh		; alloc vector allocated by GENCPM
+  01C0" FFFE  FFFE  FFFE      + 	defw	0fffeh,0fffeh,0fffeh	; dirbcb, dtabcb, hash allocated
+  01C6" 00                    + 	defb	0			; hash bank
+  01C7" ( 0000 )              + ??0018:	  defs	  0		; checksum vector
+                                	
+                                ; -----------------------------------------------------------------------------
+                                
+                                				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 13:
+                                				; 
+  01C7" 0253"                   	defw	hdwrt		; HARD DISK WRITE ROUTINE
+  01C9" 0268"                   	defw	hdrd		; HARD DISK READ ROUTINE
+  01CB" 0251"                   	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+  01CD" 0250"                   	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+  01CF" 0D                      	defb	13		; RELATIVE DRIVE 13 ON THIS CONTROLLER
+  01D0" 00                      	defb	0		; MEDIA TYPE
+                                	
+  01D1"                         dph13:	dph     0,idehd$dpb0,0
+  01D1" 0000                  + 	defw	0			; translate table address
+ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    8
+CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
+
+  01D3" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
+  01D9" 00 00 00              + 
+  01DC" 00                    + 	defb	0			; media flag
+  01DD" 0000'                 + 	defw	idehd$dpb0			; disk parameter block
+  01DF" 0000                  + 	  defw	00000h			; CSV for permanently mounted drive
+  01E1" FFFE                  + 	  defw	  0fffeh		; alloc vector allocated by GENCPM
+  01E3" FFFE  FFFE  FFFE      + 	defw	0fffeh,0fffeh,0fffeh	; dirbcb, dtabcb, hash allocated
+  01E9" 00                    + 	defb	0			; hash bank
+  01EA" ( 0000 )              + ??001A:	  defs	  0		; checksum vector
+                                	
+                                ; -----------------------------------------------------------------------------
+                                
+                                				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 14:
+                                				; 
+  01EA" 0253"                   	defw	hdwrt		; HARD DISK WRITE ROUTINE
+  01EC" 0268"                   	defw	hdrd		; HARD DISK READ ROUTINE
+  01EE" 0251"                   	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+  01F0" 0250"                   	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+  01F2" 0E                      	defb	14		; RELATIVE DRIVE 14 ON THIS CONTROLLER
+  01F3" 00                      	defb	0		; MEDIA TYPE
+                                	
+  01F4"                         dph14:	dph     0,idehd$dpb0,0
+  01F4" 0000                  + 	defw	0			; translate table address
+  01F6" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
+  01FC" 00 00 00              + 
+  01FF" 00                    + 	defb	0			; media flag
+  0200" 0000'                 + 	defw	idehd$dpb0			; disk parameter block
+  0202" 0000                  + 	  defw	00000h			; CSV for permanently mounted drive
+  0204" FFFE                  + 	  defw	  0fffeh		; alloc vector allocated by GENCPM
+  0206" FFFE  FFFE  FFFE      + 	defw	0fffeh,0fffeh,0fffeh	; dirbcb, dtabcb, hash allocated
+  020C" 00                    + 	defb	0			; hash bank
+  020D" ( 0000 )              + ??001C:	  defs	  0		; checksum vector
+                                	
+                                ; -----------------------------------------------------------------------------
+                                
+                                				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 15:
+                                				; 
+  020D" 0253"                   	defw	hdwrt		; HARD DISK WRITE ROUTINE
+  020F" 0268"                   	defw	hdrd		; HARD DISK READ ROUTINE
+  0211" 0251"                   	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+  0213" 0250"                   	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+  0215" 0F                      	defb	15		; RELATIVE DRIVE 15 ON THIS CONTROLLER
+  0216" 00                      	defb	0		; MEDIA TYPE
+                                	
+  0217"                         dph15:	dph     0,idehd$dpb0,0
+  0217" 0000                  + 	defw	0			; translate table address
+  0219" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
+  021F" 00 00 00              + 
+  0222" 00                    + 	defb	0			; media flag
+  0223" 0000'                 + 	defw	idehd$dpb0			; disk parameter block
+  0225" 0000                  + 	  defw	00000h			; CSV for permanently mounted drive
+  0227" FFFE                  + 	  defw	  0fffeh		; alloc vector allocated by GENCPM
+  0229" FFFE  FFFE  FFFE      + 	defw	0fffeh,0fffeh,0fffeh	; dirbcb, dtabcb, hash allocated
+  022F" 00                    + 	defb	0			; hash bank
+  0230" ( 0000 )              + ??001E:	  defs	  0		; checksum vector
+                                	
+                                ; -----------------------------------------------------------------------------
+ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    9
+CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
+
+                                ;
+                                ; Disk Drive Table or DTBL (So the file DRVTBL.ASM is not needed)
+                                ;
+                                ; -----------------------------------------------------------------------------
+                                
+                                	 if	banked
+                                				; --------------------------
+                                	dseg			; BANKED SYSTEMS CAN HAVE DRIVE TABLE IN THE OP SYS BANK
+                                				; --------------------------
+                                	 else
+                                				; --------------------------
+                                	cseg			; NON-BANKED SYSTEMS HAVE NO CHOICE BUT TO PUT IN THE CO
+                                				; --------------------------
+                                	 endif
+                                
+  0230"                         @dtbl:	
+  0230" 000A"                   	defw	dph0		; A:
+  0232" 002D"                   	defw	dph1		; B:
+  0234" 0050"                   	defw	dph2		; C:
+  0236" 0073"                   	defw	dph3		; D:
+  0238" 0096"                   	defw	dph4		; E:
+  023A" 00B9"                   	defw	dph5		; F:
+  023C" 00DC"                   	defw	dph6		; G:
+  023E" 00FF"                   	defw	dph7		; H:
+  0240" 0122"                   	defw	dph8		; I:
+  0242" 0145"                   	defw	dph9		; J:
+  0244" 0168"                   	defw	dph10		; K:
+  0246" 018B"                   	defw	dph11		; L:
+  0248" 01AE"                   	defw	dph12		; M:
+  024A" 01D1"                   	defw	dph13		; N:
+  024C" 01F4"                   	defw	dph14		; O:
+  024E" 0217"                   	defw	dph15		; P:
+                                	
+                                ; -----------------------------------------------------------------------------
+                                ;    
+                                ; Disk Parameter Block  table (DPB)
+                                ;
+                                ; DBP macro parameters:
+                                ; Bytes per sector, num sec, num trk, block size, dir entries, reserved trk, HD
+                                ;
+                                ; -----------------------------------------------------------------------------
+                                
+                                				; --------------------------
+                                	cseg			; MAKE SURE DPB'S ARE IN COMMON MEMORY
+                                				; --------------------------
+                                	
+  0000'                         idehd$dpb0:
+                                	dpb 512,32,512,4096,512,1,8000h
+  0000' 0080                  + 	defw	??0020		; Number of 128 byte records per track
+  0002' 05 1F                 + 	defb	??0021,??0022	; block shift and mask
+  0004' 01                    + 	defb	??0023		; extent mask
+  0005' 07FB                  + 	defw	??0024		; maximum block number
+  0007' 01FF                  + 	defw	??0025		; maximum directory entry number
+  0009' F0 00                 + 	defb	??0026,??0027	; alloc vector for directory
+  000B' 8000                  + 	defw	??0028		; checksum size
+  000D' 0001                  + 	defw	1		; offset for system tracks
+  000F' 02 03                 + 	defb	??0029,??002A	; physical sector size shift and mask
+ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page   10
+CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
+
+                                
+                                ; -----------------------------------------------------------------------------
+                                ;
+                                ;                     >>>>>>> READ CAREFULLY <<<<<<<<
+                                ;
+                                ; NOTE: the disk capacity *MUST* be *LESS* than 8MBytes with DPB macro!!!
+                                ; (See CP/M 3 System Guide par. 3.3.5)
+                                ; But Z80-MBC2 virtual disks are exactly 8Mbytes (512 * 512 * 32),
+                                ; so I've used a little trick to keep things simple and avoid to do the table
+                                ; by hand... I've used for all disk an 1 reserved track, so the available 
+                                ; disk capacity is less that 8MB (and the DPB macro works...)
+                                ; Yeahhh... I'm lazy... :-)
+                                ; -----------------------------------------------------------------------------
+                                	
+                                	 if	banked
+                                				; --------------------------
+                                	dseg			; CAN SET BACK TO BANKED SEGMENT IF BANKING
+                                				; --------------------------
+                                	 endif
+                                
+                                ;----------------------- INITIALIZE THE HARD DISK  ----------------------------
+                                	
+  0250"                         hdinit:	
+  0250" C9                      	ret			; Nothing to initialize
+                                
+                                
+  0251"                         hdlogin:
+                                				; This entry is called when a logical drive is about to
+                                				; be logged into for the purpose of density determination.
+                                				; 
+                                				; It may adjust the parameters contained in the disk
+                                				; parameter header pointed at by <DE>
+  0251" C9                      	ret			; We have nothing to do
+                                
+                                
+                                ;------------------------------------------------------------------------------
+                                ;      HARD DISK WRITE/READ A SECTOR AT @TRK, @SECT of disk @ADRV TO Address at
+                                ;      Return A=00H if no Error, A=01H if Non-recov Err
+                                ;
+                                ;
+                                ;      >>>> WARNING <<<<: In a banked system @ADRV, @RDRV, @DBNK, @TRK, @SECT, 
+                                ;                         all in bank 0
+                                ;
+                                ;------------------------------------------------------------------------------
+                                
+                                				; relative drive number in @rdrv (8 bits)
+                                				; absolute drive number in @adrv (8 bits)
+                                				; disk transfer address in @dma (16 bits)
+                                				; disk transfer bank    in @dbnk (8 bits)
+                                				; disk track address    in @trk (16 bits)
+                                				; disk sector address   in @sect (16 bits)
+                                				; pointer to XDPH in <DE>
+                                
+                                ;------------------------------------------------------------------------------
+                                
+  0252"                         lastdsk:
+  0252" FF                      	defb	0ffh		; Last disk number (= ff after cold boot)
+ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page   11
+CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
+
+                                
+  0253"                         hdwrt:				; Write a sector (512 bytes)
+  0253" C5                      	push	bc
+  0254" E5                      	push	hl
+  0255" CD 027D"                	call	setdts		; Set disk, track, sector (after return HL 
+                                	 if	banked		; Banked system handling
+  0258" C3 0011'                	jp	bhdwrt
+                                				; --------------------------
+                                	cseg			; This I/O part must be in the common bank
+                                				; --------------------------
+  0011'                         bhdwrt:	
+  0011' 3A 0000#                	ld	a,(@cbnk)	; Save current bank in the stack
+  0014' F5                      	push	af
+  0015' 3A 0000#                	ld	a,(@dbnk)	; Select the bank for disk I/O
+  0018' CD 0000#                	call	?bnksl
+                                	 endif
+                                				; 
+                                				; Write current host sector (512 byte) to DMA (HL = DMA)
+  001B' 0E 00                   	ld	c, exc$wr$opcd	; Set the EXECUTE WRITE OPCODE port into C
+  001D' 3E 0C                   	ld	a, wrtsect$opc	; Select WRITESECT opcode (IOS)
+  001F' D3 01                   	out	(sto$opcd),a
+  0021' 06 00                   	ld	b, 0		; Byte counter = 256
+  0023' ED B3                   	otir			; Write 256 byte
+  0025' ED B3                   	otir			; Write 256 byte
+                                	 if	banked
+  0027' F1                      	pop	af		; Restore previous bank
+  0028' CD 0000#                	call	?bnksl
+  002B' C3 025B"                	jp	checkwr
+                                				; --------------------------
+                                	dseg
+                                				; --------------------------
+                                	 endif
+                                				; 
+                                				; Check for errors
+  025B"                         checkwr:
+  025B" 3E 85                   	ld	a, errdsk$opc	; Select ERRDISK opcode (IOS)
+  025D" D3 01                   	out	(sto$opcd),a
+  025F" DB 00                   	in	a,(exc$rd$opcd)	; Read error code into A
+  0261" B7                      	or	a		; Set Z flag
+  0262" E1                      	pop	hl
+  0263" C1                      	pop	bc
+  0264" C8                      	ret	z		; Return with A = 0 (no error)
+  0265" 3E 01                   	ld	a, 1		; Set error code
+  0267" C9                      	ret			; Return with A = 1 (read error)
+                                
+                                
+                                ;------------------------------------------------------------------------------
+                                
+                                
+  0268"                         hdrd:				; Read a sector (512 bytes)
+  0268" C5                      	push	bc
+  0269" E5                      	push	hl
+  026A" CD 027D"                	call	setdts		; Set disk, track, sector (after return HL =
+                                	 if	banked		; Banked system handling
+  026D" C3 002E'                	jp	bhdrd
+                                				; --------------------------
+                                	cseg			; This I/O part must be in the common bank
+ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page   12
+CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
+
+                                				; --------------------------
+  002E'                         bhdrd:	
+  002E' 3A 0000#                	ld	a,(@cbnk)	; Save current bank in the stack
+  0031' F5                      	push	af
+  0032' 3A 0000#                	ld	a,(@dbnk)	; Select the bank for disk I/O
+  0035' CD 0000#                	call	?bnksl
+                                	 endif
+                                				; 
+                                				; Read current host sector (512 byte) to DMA (HL = DMA)
+  0038' 0E 00                   	ld	c, exc$rd$opcd	; Set the EXECUTE READ OPCODE port into C
+  003A' 3E 86                   	ld	a, rdsect$opc	; Select READSECT opcode (IOS)
+  003C' D3 01                   	out	(sto$opcd),a
+  003E' 06 00                   	ld	b, 0		; Byte counter = 256
+  0040' ED B2                   	inir			; Read 256 byte
+  0042' ED B2                   	inir			; Read 256 byte
+                                	 if	banked
+  0044' F1                      	pop	af		; Restore previous bank
+  0045' CD 0000#                	call	?bnksl
+  0048' C3 0270"                	jp	checkrd
+                                				; --------------------------
+                                	dseg
+                                				; --------------------------
+                                	 endif
+                                				; 
+                                				; Check for errors
+  0270"                         checkrd:
+  0270" 3E 85                   	ld	a, errdsk$opc	; Select ERRDISK opcode (IOS)
+  0272" D3 01                   	out	(sto$opcd),a
+  0274" DB 00                   	in	a,(exc$rd$opcd)	; Read error code into A
+  0276" B7                      	or	a		; Set Z flag
+  0277" E1                      	pop	hl
+  0278" C1                      	pop	bc
+  0279" C8                      	ret	z		; Return with A = 0 (no error)
+  027A" 3E 01                   	ld	a, 1		; Set error code
+  027C" C9                      	ret			; Return with A = 1 (read error)
+                                
+                                ;------------------------------------------------------------------------------
+                                	
+                                ; Set disk, track and sector routine for a read or write operation and load int
+                                ; HL the address in @DMA (used for the read/write operaton)
+                                
+  027D"                         setdts:				; Select the disk, track and sector
+                                				; 
+                                				; Select @ADRV host disk
+  027D" 3A 0000#                	ld	a,(@adrv)	; A = new disk
+  0280" 47                      	ld	b, a		; B = new disk
+  0281" 3A 0252"                	ld	a,(lastdsk)	; A = last disk number
+  0284" B8                      	cp	b		; Previous disk = new disk?
+  0285" 28 0A                   	jr	z,settrack	; Yes, jump to track selection
+  0287" 3E 09                   	ld	a, seldisk$opc	; No, select SELDISK opcode (IOS)
+  0289" D3 01                   	out	(sto$opcd),a
+  028B" 78                      	ld	a, b		; A = new disk
+  028C" D3 00                   	out	(exc$wr$opcd),a
+  028E" 32 0252"                	ld	(lastdsk),a	; Update last disk number 
+                                				; 
+                                				; Select @TRK host track
+  0291"                         settrack:
+ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page   13
+CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
+
+  0291" 3E 0A                   	ld	a, seltrck$opc	; Select SELTRACK opcode (IOS)
+  0293" D3 01                   	out	(sto$opcd),a
+  0295" 3A 0000#                	ld	a,(@trk)	; Select the track number LSB
+  0298" D3 00                   	out	(exc$wr$opcd),a
+  029A" 3A 0000#                	ld	a,(@trk + 1)	; Select the track number MSB
+  029D" D3 00                   	out	(exc$wr$opcd),a
+                                				; 
+                                				; Select @SECT host sector
+  029F" 3E 0B                   	ld	a, selsect$opc	; Select SELSECT opcode (IOS)
+  02A1" D3 01                   	out	(sto$opcd),a
+  02A3" 3A 0000#                	ld	a,(@sect)	; Select the sector number (LSB only)
+  02A6" D3 00                   	out	(exc$wr$opcd),a
+                                				; 
+                                				; Load into HL the address in @DMA
+  02A8" 2A 0000#                	ld	hl,(@dma)
+  02AB" C9                      	ret
+                                
+  0000  =                       	end
+
+Errors: 0
+ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page   14
+
+Macros:
+DPB                       DPH                       DTBL
+GCD                       SKEW                      
+
+Symbols:
+??0000 ........... 0023"  ??0002 ........... 0046"  ??0004 ........... 0069"
+??0006 ........... 008C"  ??0008 ........... 00AF"  ??000A ........... 00D2"
+??000C ........... 00F5"  ??000E ........... 0118"  ??0010 ........... 013B"
+??0012 ........... 015E"  ??0014 ........... 0181"  ??0016 ........... 01A4"
+??0018 ........... 01C7"  ??001A ........... 01EA"  ??001C ........... 020D"
+??001E ........... 0230"  ??0020 ........... 0080   ??0021 ........... 0005 
+??0022 ........... 001F   ??0023 ........... 0001   ??0024 ........... 07FB 
+??0025 ........... 01FF   ??0026 ........... 00F0   ??0027 ........... 0000 
+??0028 ........... 8000   ??0029 ........... 0002   ??002A ........... 0003 
+??002B ........... 0004   ?ALL ............. F000   ?BNKSL ........... 0000#
+?CONIN ........... 0000#  ?CONO ............ 0000#  ?CONST ........... 0000#
+?PDERR ........... 0000#  ?PMSG ............ 0000#  ?SIZE ............ FF80 
+?WBOOT ........... 0000#  @ADRV ............ 0000#  @CBNK ............ 0000#
+@DBNK ............ 0000#  @DMA ............. 0000#  @DTBL ............ 0230"P
+@ERMDE ........... 0000#  @RDRV ............ 0000#  @SECT ............ 0000#
+@TRK ............. 0000#  BANKED ........... FFFF   BELL ............. 0007 
+BHDRD ............ 002E'  BHDWRT ........... 0011'  CHECKRD .......... 0270"
+CHECKWR .......... 025B"  CR ............... 000D   DATETIM$OPC ...... 0084 
+DPH0 ............. 000A"  DPH1 ............. 002D"  DPH10 ............ 0168"
+DPH11 ............ 018B"  DPH12 ............ 01AE"  DPH13 ............ 01D1"
+DPH14 ............ 01F4"  DPH15 ............ 0217"  DPH2 ............. 0050"
+DPH3 ............. 0073"  DPH4 ............. 0096"  DPH5 ............. 00B9"
+DPH6 ............. 00DC"  DPH7 ............. 00FF"  DPH8 ............. 0122"
+DPH9 ............. 0145"  ERRDSK$OPC ....... 0085   EXC$RD$OPCD ...... 0000 
+EXC$WR$OPCD ...... 0000   FALSE ............ 0000   HDINIT ........... 0250"
+HDLOGIN .......... 0251"  HDRD ............. 0268"  HDWRT ............ 0253"
+IDEHD$DPB0 ....... 0000'  LASTDSK .......... 0252"  LF ............... 000A 
+RDSECT$OPC ....... 0086   SDMOUNT$OPC ...... 0087   SELDISK$OPC ...... 0009 
+SELSECT$OPC ...... 000B   SELTRCK$OPC ...... 000A   SERIAL$RX ........ 0001 
+SERTX$OPC ........ 0001   SETDTS ........... 027D"  SETTRACK ......... 0291"
+STO$OPCD ......... 0001   SYSFLAG$OPC ...... 0083   TRUE ............. FFFF 
+WRTSECT$OPC ...... 000C   
+

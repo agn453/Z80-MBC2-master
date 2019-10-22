@@ -1,0 +1,448 @@
+	title	'CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)'
+	.z80
+;
+;	Converted to Z80 mnemonics via XIZ by Tony Nicholson
+;	with an added banked conditional around common stack
+;	storage since it is not used (saves a few more bytes).
+;
+;	Assemble using Microsoft M80 or Hector Peraza's ZSM4
+;
+;******************************************************************************
+;
+; CHARIO.ASM - S210918-R170319
+; CP/M 3.0 CHARACTER I/O BIOS MODULE FOR THE Z80-MBC2 (HW ref. A040618)
+;
+; Required IOS S220718-R260119 (or following revisions until otherwise stated)
+;
+; CHANGELOG:
+;
+; S210918           First release
+; S210918-R090319   Changed CIST0: and CI0: to allow full 8 bit data I/O
+; S210918-R170319   Added the selection of the mode of CIST0: (7 or 8 bit mode,
+;
+;
+;******************************************************************************
+
+				; DEFINE LOGICAL VALUES:
+true	equ	-1
+false	equ	not true
+
+				; DETERMINE IF FOR BANK SELECT OR NOT:
+banked	equ	false		; <------ BANKED/NON-BANKED SWITCH
+
+; -------------------------------------------------------------------
+;
+;          >>>>>>>>>>>>>> READ CAREFULLY <<<<<<<<<<<<<<
+;
+; To prevent the CHARIO.ASM bank switching IOS requests from
+; interfering with user program IOS request if using
+; "slow" interpreters as e.g. MBASIC.COM, I've decided to avoid
+; bank switching here. This is a simple solution to avoid more
+; complex one. For this reason the "BANKED" switch is intentionally
+; set at "FALSE" (although the system is banked)
+;
+; -------------------------------------------------------------------
+
+
+				; DEFINE PUBLIC LABELS:
+	public ?cinit,?ci,?co,?cist,?cost
+	public @ctbl
+	public  ?cnstflg	; CONST mode flag (Z80-MBC2) ***
+
+				; DEFINE EXTERNAL LABELS AND ENTRY POINTS:
+	 if	banked
+	extrn @cbnk
+	extrn ?bnksl
+	 endif
+	extrn ?pmsg
+
+	include modebaud.lib	; EQUATES FOR MODE BYTE BIT FIELDS
+
+; -----------------------------------------------------------------------------
+;
+; Z80-MBC2 IOS equates
+;
+; -----------------------------------------------------------------------------
+
+exc$wr$opcd equ	000h		; Address of the EXECUTE WRITE OPCODE write port
+exc$rd$opcd equ	000h		; Address of the EXECUTE READ OPCODE read port
+sto$opcd equ	001h		; Address of the STORE OPCODE write port
+serial$rx equ	001h		; Address of the SERIAL RX read port
+sertx$opc equ	001h		; SERIAL TX opcode
+seldisk$opc equ	009h		; SELDISK opcode
+seltrck$opc equ	00ah		; SELTRACK opcode
+selsect$opc equ	00bh		; SELSECT opcode
+wrtsect$opc equ	00ch		; WRITESECT opcode
+sysflag$opc equ	083h		; SYSFLAG opcode
+datetim$opc equ	084h		; DATETIME opcode
+errdsk$opc equ	085h		; ERRDISK opcode
+rdsect$opc equ	086h		; READSECT opcode
+sdmount$opc equ	087h		; SDMOUNT opcode
+
+
+				; WILL START OFF IN COMMON MEMORY FOR BANKED OR NON-BANKED SYSTEMS:
+				; --------------------------
+	cseg
+				; --------------------------
+
+
+	 if	banked
+				; WE PROVIDE ALTERNATE DEFINITIONS OF THE ROUTINE ENTRY POINTS IF
+				;  WE ARE RUNNING A BANKED SYSTEM VERSUS A NON-BANKED SYSTEM:
+
+				; ;;;; ?CINIT
+				; ENTER HERE FOR BANKED SYSTEMS FOR DEVICE INITIALIZATIONS:
+?cinit:
+	ld	hl,bcinit	; POINT TO BANKED ROUTINE ADDRESS
+	jr bankio		; GO TO DISPATCHER
+
+				; ;;;; ?CI
+				; ENTER HERE FOR BANKED SYSTEM DEVICE INPUT:
+?ci:	ld	hl,bci		; POINT TO BANKED ROUTINE ADDRESS
+	jr bankio		; GO TO DISPATCHER
+
+				; ;;;; ?CO
+				; ENTER HERE FOR BANKED SYSTEM DEVICE OUTPUT:
+?co:	ld	hl,bco		; POINT TO BANKED ROUTINE ADDRESS
+	jr bankio		; GO TO DISPATCHER
+
+				; ;;;; ?CIST
+				; ENTER HERE FOR BANKED SYSTEM DEVICE INPUT STATUS:
+?cist:	ld	hl,bcist	; POINT TO BANKED ROUTINE ADDRESS
+	jr bankio		; GO TO DISPATCHER
+
+				; ;;;; ?COST
+				; ENTER HERE FOR BANKED SYSTEM DEVICE OUTPUT STATUS:
+?cost:	ld	hl,bcost	; POINT TO BANKED ROUTINE ADDRESS
+
+
+				; ;;;; BANKIO
+				; ROUTINE DISPATCHES TO BANKED PORTION OF CHARACTER I/O ROUTINES:
+bankio:
+	ld	(spsave),sp	; SAVE CURRENT STACK POINTER
+	ld	sp,iosp		; AND USE LOCAL STACK FOR I/O
+	ld	a,(@cbnk)	; GET CURRENT BANK
+	push	af		; SAVE ON LOCAL STACK
+	xor	a		; WE WILL SELECT BANK 0 (OP SYS)
+	call	?bnksl
+	ld	de,bioret	; RETURN ADDRESS IN [DE]
+	push	de		; PUT IT ON STACK FOR RETURN
+	jp	(hl)		; DISPATCH TO BANKED PART OF ROUTINE
+
+				; ARRIVE HERE AFTER DEVICE HANDLER FINISHED:
+bioret:
+	pop	de		; GET PREVIOUS CURRENT BANK TO [D]
+	push	af		; SAVE HANDLER RETURNED RESULT (IF ANY)
+	ld	a,d		; RESELECT PREVIOUS CURRENT BANK
+	call	?bnksl
+	pop	af		; GET BACK RESULT CODE TO [A]
+	ld	sp,(spsave)	; RESTORE PREVIOUS STACK
+	ret			; AND RETURN...
+	 endif
+
+
+				; ;;;;
+				; ;;;; ACTUAL DEVICE HANDLERS
+				; ;;;;
+
+
+				; ;;;; ?CINIT (BCINIT FOR BANKED)
+				; PHYSICAL CODE FOR DEVICE INITIALIZATION:
+	 if	banked
+				; --------------------------
+	dseg			; CAN PUT IN BANKED SEGMENT IF BANKED
+				; --------------------------
+bcinit:
+	 else
+?cinit:
+	 endif
+	ld	b,c		; ON ENTRY DEVICE # IS IN [C] BUT WE NEED
+				; IT IN [B]
+	call	dev$dispatch	; GO TO CORRECT INIT ROUTINE
+	defw	cinit0		; INIT FOR DEVICE 0
+	defw	null$init	; INIT FOR DEVICE 1
+	defw	null$init	; INIT FOR DEVICE 2
+	defw	null$init	; INIT FOR DEVICE 3
+	defw	null$init	; INIT FOR DEVICE 4
+	defw	null$init	; INIT FOR DEVICE 5
+	defw	null$init	; INIT FOR DEVICE 6
+	defw	null$init	; INIT FOR DEVICE 7
+	defw	null$init	; INIT FOR DEVICE 8
+	defw	null$init	; INIT FOR DEVICE 9
+	defw	null$init	; INIT FOR DEVICE 10
+	defw	null$init	; INIT FOR DEVICE 11
+	defw	null$init	; INIT FOR DEVICE 12
+	defw	null$init	; INIT FOR DEVICE 13
+	defw	null$init	; INIT FOR DEVICE 14
+	defw	null$init	; INIT FOR DEVICE 15
+
+
+				; ;;;; ?CI (BCI FOR BANKED)
+				; PHYSICAL CODE FOR DEVICE INPUT:
+	 if	banked
+bci:
+	 else
+?ci:
+	 endif
+	call	dev$dispatch
+	defw	ci0		; DEVICE 0 INPUT
+	defw	null$ci		; DEVICE 1 INPUT
+	defw	null$ci		; DEVICE 2 INPUT
+	defw	null$ci		; DEVICE 3 INPUT
+	defw	null$ci		; DEVICE 4 INPUT
+	defw	null$ci		; DEVICE 5 INPUT
+	defw	null$ci		; DEVICE 6 INPUT
+	defw	null$ci		; DEVICE 7 INPUT
+	defw	null$ci		; DEVICE 8 INPUT
+	defw	null$ci		; DEVICE 9 INPUT
+	defw	null$ci		; DEVICE 10 INPUT
+	defw	null$ci		; DEVICE 11 INPUT
+	defw	null$ci		; DEVICE 12 INPUT
+	defw	null$ci		; DEVICE 13 INPUT
+	defw	null$ci		; DEVICE 14 INPUT
+	defw	null$ci		; DEVICE 15 INPUT
+
+
+				; ;;;; ?CO (BCO FOR BANKED)
+				; PHYSICAL CODE FOR DEVICE OUTPUT:
+	 if	banked
+bco:
+	 else
+?co:
+	 endif
+	call	dev$dispatch	; GO TO CORRECT DEVICE OUTPUT HANDLER
+	defw	co0		; DEVICE 0 OUTPUT
+	defw	null$co		; DEVICE 1 OUTPUT
+	defw	null$co		; DEVICE 2 OUTPUT
+	defw	null$co		; DEVICE 3 OUTPUT
+	defw	null$co		; DEVICE 4 OUTPUT
+	defw	null$co		; DEVICE 5 OUTPUT
+	defw	null$co		; DEVICE 6 OUTPUT
+	defw	null$co		; DEVICE 7 OUTPUT
+	defw	null$co		; DEVICE 8 OUTPUT
+	defw	null$co		; DEVICE 9 OUTPUT
+	defw	null$co		; DEVICE 10 OUTPUT
+	defw	null$co		; DEVICE 11 OUTPUT
+	defw	null$co		; DEVICE 12 OUTPUT
+	defw	null$co		; DEVICE 13 OUTPUT
+	defw	null$co		; DEVICE 14 OUTPUT
+	defw	null$co		; DEVICE 15 OUTPUT
+
+
+				; ;;;; ?CIST (BCIST FOR BANKED)
+				; PHYSICAL CODE FOR DEVICE INPUT STATUS:
+	 if	banked
+bcist:
+	 else
+?cist:
+	 endif
+	call	dev$dispatch
+	defw	cist0		; DEVICE 0 INPUT STATUS
+	defw	null$cist	; DEVICE 1 INPUT STATUS
+	defw	null$cist	; DEVICE 2 INPUT STATUS
+	defw	null$cist	; DEVICE 3 INPUT STATUS
+	defw	null$cist	; DEVICE 4 INPUT STATUS
+	defw	null$cist	; DEVICE 5 INPUT STATUS
+	defw	null$cist	; DEVICE 6 INPUT STATUS
+	defw	null$cist	; DEVICE 7 INPUT STATUS
+	defw	null$cist	; DEVICE 8 INPUT STATUS
+	defw	null$cist	; DEVICE 9 INPUT STATUS
+	defw	null$cist	; DEVICE 10 INPUT STATUS
+	defw	null$cist	; DEVICE 11 INPUT STATUS
+	defw	null$cist	; DEVICE 12 INPUT STATUS
+	defw	null$cist	; DEVICE 13 INPUT STATUS
+	defw	null$cist	; DEVICE 14 INPUT STATUS
+	defw	null$cist	; DEVICE 15 INPUT STATUS
+
+
+				; ;;;; ?COST (BCOST FOR BANKED)
+				; PHYSICAL CODE FOR DEVICE OUTPUT STATUS:
+	 if	banked
+bcost:
+	 else
+?cost:
+	 endif
+	call	dev$dispatch	; GO TO CONSOLE OUTPUT STATUS HANDLER
+	defw	cost0		; DEVICE 0 OUTPUT STATUS
+	defw	null$cost	; DEVICE 1 OUTPUT STATUS
+	defw	null$cost	; DEVICE 2 OUTPUT STATUS
+	defw	null$cost	; DEVICE 3 OUTPUT STATUS
+	defw	null$cost	; DEVICE 4 OUTPUT STATUS
+	defw	null$cost	; DEVICE 5 OUTPUT STATUS
+	defw	null$cost	; DEVICE 6 OUTPUT STATUS
+	defw	null$cost	; DEVICE 7 OUTPUT STATUS
+	defw	null$cost	; DEVICE 8 OUTPUT STATUS
+	defw	null$cost	; DEVICE 9 OUTPUT STATUS
+	defw	null$cost	; DEVICE 10 OUTPUT STATUS
+	defw	null$cost	; DEVICE 11 OUTPUT STATUS
+	defw	null$cost	; DEVICE 12 OUTPUT STATUS
+	defw	null$cost	; DEVICE 13 OUTPUT STATUS
+	defw	null$cost	; DEVICE 14 OUTPUT STATUS
+	defw	null$cost	; DEVICE 15 OUTPUT STATUS
+
+
+				; ;;;; DEV$DISPATCH
+				; ROUTINE JUMPS TO CORRECT DEVICE HANDLER:
+dev$dispatch:
+	ld	a,b		; GET DEVICE # TO [A]
+	ld	(dev$code),a	; SAVE FOR LATER USE
+	add	a,a		; X2 FOR WORD OFFSET
+	pop	hl		; RETURN ADDRESS IS 1ST PARAMETER ADDRESS
+	ld	e,a		; SET UP OFFSET IN [DE]
+	ld	d,0
+	add	hl,de		; [HL] = PTR TO HANDLER ADDRESS
+	ld	e,(hl)		; GET HANDLER ADDRESS TO [DE]
+	inc	hl
+	ld	d,(hl)
+	ex	de,hl		; PUT IN [HL]
+	jp	(hl)		; AND DISPATCH TO IT...
+
+
+				; ;;;;
+				; ;;;; PHYSICAL DEVICE HANDLER CODE:
+				; ;;;;
+	
+; ----------------------------------------------------------
+;
+; Z80-MBC2 I/O
+;
+; ----------------------------------------------------------
+
+
+cinit0:				; DEVICE 0 INITIALIZATION (Z80-MBC2) 
+	ret			; Nothing to do
+
+; 
+;<<<<<<<<<<<<<<<<<<< MAIN CONSOLE STATUS ROUTINE (Z80-MBC2) >>>>>>>>>>>>>>>>>>>
+;
+
+
+cist0:				; DEVICE 0 INPUT STATUS
+	ld	a,(?cnstflg)	; A = CONST mode flag
+	or	a		; CONST mode flag = 0?
+	jr	z,const7	; Yes, jump to 7 bit CONST routine
+const8:				; No, 8 bit mode CONST routine
+	ld	a, sysflag$opc	; A = SYSFLAG opcode
+	out	(sto$opcd),a	; Write the opcode
+	in	a,(exc$rd$opcd)	; Read SYSFLAG data into A
+	and	04h		; Rx serial buffer empty (D2 = 0)?
+	jr	z,noinchr	; Yes, jump
+				; No, set char ready flag
+
+inchr:				; Set char ready flag
+	ld	a, 0ffh		; Return CP/M a char ready flag ($FF)
+	ret
+
+const7:
+	ld	a,(inchrbuf)	; A = previous char read by CONST, if any
+	cp	0ffh		; Is = $FF ($FF from UART = no char)?
+	jr	nz,inchr	; No, jump (char already read and ready)
+	in	a,(serial$rx)	; Yes, Read a char from "virtual" UART
+	ld	(inchrbuf),a	; Store it
+	cp	0ffh		; Is = $FF ($FF from UART = no char)?
+	jr	nz,inchr	; No, set char ready flag
+				; Yes, set char not ready flag
+
+noinchr:			; Set char not ready flag
+	xor	a		; Set no char flag (A = 0)
+	ret			; Return CP/M no char flag ($00)
+	
+inchrbuf:
+				; Last read char by CONST ($FF = no char)
+	defb	0ffh		; Initialized as $FF
+?cnstflg:
+	defb	0h		; CONST mode flag. If = 1 the full 8 bit mode is ac
+				; if = 0 the "legacy" 7 bit mode is used (not really 7 bit
+				; but only the $ff char is ignored and used as "no char" flag ***
+
+cost0:				; DEVICE 0 OUTPUT STATUS (Z80-MBC2) 
+	ld	a, 0ffh		; Always ready to TX
+	ret
+
+;
+;<<<<<<<<<<<<<<<<<<<< MAIN CONSOLE INPUT ROUTINE (Z80-MBC2) >>>>>>>>>>>>>>>>>>>
+;
+
+ci0:				; DEVICE 0 INPUT
+	ld	a,(inchrbuf)	; A = previous char read by CONST, if any
+	cp	0ffh		; Is = $FF ($FF from UART = no char)?
+	jr	z,getchr	; Yes, jump to read a char
+	push	af		; No, InChrBuf = $FF (clear buffer)
+	ld	a, 0ffh
+	ld	(inchrbuf),a
+	pop	af		; Return with the previously saved char
+	ret
+	
+getchr:
+	in	a,(serial$rx)	; Read a char from UART
+	cp	0ffh		; Is = $FF ($FF from UART = no char)?
+	ret	nz		; No, retun with it in A
+				; Yes, check if ffH is a valid char
+
+chkff:				; Check if ffH is a valid char
+	ld	a, sysflag$opc	; A = SYSFLAG opcode
+	out	(sto$opcd),a	; Write the opcode
+	in	a,(exc$rd$opcd)	; Read SYSFLAG data into A
+	and	08h		; It was a "serial buffer empty" flag (D3 = 1)?
+	jr	nz,getchr	; Yes, jump and wait for a char
+	ld	a, 0ffh		; No, it is a valid ffH char
+	ret			; Retun with it in A
+
+	
+;
+;<<<<<<<<<<<<<<<<<<<<<< MAIN CONSOLE OUTPUT ROUTINE (Z80-MBC2) >>>>>>>>>>>>>>>>
+;
+
+co0:				; DEVICE 0 OUTPUT
+	ld	a, sertx$opc	; A = SERIAL TX opcode
+	out	(sto$opcd),a	; Write the opcode
+	ld	a, c
+	out	(exc$wr$opcd),a	; Send A to serial Tx
+	ret
+
+;
+; -------------------------------------------------------------------------
+;
+
+				; ;;;; NULL ROUTINES:
+null$cist:
+null$cost:
+	xor	a		; RETURN A FALSE STATUS RESULT
+	jr null$ret
+null$ci:
+	ld	a,1ah		; FOR INPUT RETURN A CNTL-Z (EOF)
+null$init:
+null$co:
+null$ret:
+	ret			; HARMLESS RETURN
+
+
+				; STORAGE FOR DEVICE CODE -- CAN RESIDE IN SAME SEGMENT AS THE BULK
+				;  OF CHARACTER I/O ROUTINES:
+dev$code:
+	defs	1
+
+				; ;;;; CHRTBL
+				; CHARACTER DEVICE TABLE
+				; --------------------------
+	cseg			; MUST RESIDE IN COMMON MEMORY
+				; --------------------------
+	
+@ctbl:
+	defb	'CRT   '	; CONSOLE (DEVICE 0)
+	defb	mb$in$out
+	defb	baud$none
+
+max$devices equ	($-@ctbl)/8	; # DEVICES IN TABLE
+	defb	0		; TABLE TERMINATOR
+
+  if banked
+				; OTHER DATA AREAS:
+	defs	24		; CHARACTER I/O LOCAL STACK
+iosp	equ	$
+spsave:	defs	2
+
+  endif
+
+	end
+                                                                                      

@@ -1,0 +1,530 @@
+	title	'CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)'
+	.z80
+;	Converted to Z80 mnemonics via XIZ by Tony Nicholson
+;	Assemble using Microsoft M80 or Hector Peraza's ZSM4
+;
+;******************************************************************************
+;
+; VDISK.ASM - S200918
+; CP/M 3.0 VIRTUAL DISK ON SD BIOS MODULE FOR THE Z80-MBC2 (HW ref. A040618)
+;
+; Required IOS S220718-R190918 (or newer revisions until otherwise stated)
+;
+; NOTE: Use the RMAC.COM relocatable assembler
+;
+;
+;
+;******************************************************************************
+
+				;  DEFINE LOGICAL VALUES:
+true	equ	-1
+false	equ	not true
+
+				;  DETERMINE IF BANKED SELECT OR NOT
+banked	equ	true		; <------ BANKED/NON-BANKED SWITCH
+
+bell	equ	07h
+cr	equ	0dh
+lf	equ	0ah
+
+; -----------------------------------------------------------------------------
+;
+; Z80-MBC2 IOS equates
+;
+; -----------------------------------------------------------------------------
+
+exc$wr$opcd equ	000h		; Address of the EXECUTE WRITE OPCODE write port
+exc$rd$opcd equ	000h		; Address of the EXECUTE READ OPCODE read port
+sto$opcd equ	001h		; Address of the STORE OPCODE write port
+serial$rx equ	001h		; Address of the SERIAL RX read port
+sertx$opc equ	001h		; SERIAL TX opcode
+seldisk$opc equ	009h		; SELDISK opcode
+seltrck$opc equ	00ah		; SELTRACK opcode
+selsect$opc equ	00bh		; SELSECT opcode
+wrtsect$opc equ	00ch		; WRITESECT opcode
+sysflag$opc equ	083h		; SYSFLAG opcode
+datetim$opc equ	084h		; DATETIME opcode
+errdsk$opc equ	085h		; ERRDISK opcode
+rdsect$opc equ	086h		; READSECT opcode
+sdmount$opc equ	087h		; SDMOUNT opcode
+
+	
+	public  @dtbl
+
+				; DEFINE EXTERNAL LABELS:
+	extrn   @adrv,@rdrv
+	extrn   @dma,@trk,@sect
+	extrn   @cbnk
+	extrn   @dbnk		; BANK FOR DMA OPERATION
+	extrn   @ermde		; BDOS ERROR MODE
+	extrn   ?wboot		; WARM BOOT VECTOR
+	extrn   ?pmsg		; PRINT MESSAGE @<HL> UP TO 00, SAVES
+				; [BC] AND [DE]
+	extrn   ?pderr		; PRINT BIOS DISK ERROR HEADER
+	extrn   ?conin,?cono	; CONSOLE IN AND OUT
+	extrn   ?const		; CONSOLE STATUS
+	
+	 if	banked
+	extrn   ?bnksl		; SELECT PROCESSOR MEMORY BANK
+	 endif
+
+				; INCLUDE CP/M 3.0 DISK DEFINITION MACROS:
+	include  cpm3m80.lib
+
+	 if	banked
+				; --------------------------
+	dseg			; PUT IN OP SYS BANK IF BANKING
+				; --------------------------
+	 endif
+
+; -----------------------------------------------------------------------------
+;
+; EXTENDED DISK PARAMETER HEADER FOR 16 VIRTUAL DISKS (Z80-MBC2)
+;
+; -----------------------------------------------------------------------------
+
+				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 0:
+				; 
+	defw	hdwrt		; HARD DISK WRITE ROUTINE
+	defw	hdrd		; HARD DISK READ ROUTINE
+	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+	defb	0		; RELATIVE DRIVE 0 ON THIS CONTROLLER
+	defb	0		; MEDIA TYPE
+
+dph0:	dph     0,idehd$dpb0
+
+; -----------------------------------------------------------------------------
+
+				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 1:
+				; 
+	defw	hdwrt		; HARD DISK WRITE ROUTINE
+	defw	hdrd		; HARD DISK READ ROUTINE
+	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+	defb	1		; RELATIVE DRIVE 1 ON THIS CONTROLLER
+	defb	0		; MEDIA TYPE
+	
+dph1:	dph     0,idehd$dpb0
+	
+; -----------------------------------------------------------------------------
+
+				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 2:
+				; 
+	defw	hdwrt		; HARD DISK WRITE ROUTINE
+	defw	hdrd		; HARD DISK READ ROUTINE
+	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+	defb	2		; RELATIVE DRIVE 2 ON THIS CONTROLLER
+	defb	0		; MEDIA TYPE
+	
+dph2:	dph     0,idehd$dpb0
+	
+; -----------------------------------------------------------------------------
+
+				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 3:
+				; 
+	defw	hdwrt		; HARD DISK WRITE ROUTINE
+	defw	hdrd		; HARD DISK READ ROUTINE
+	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+	defb	3		; RELATIVE DRIVE 3 ON THIS CONTROLLER
+	defb	0		; MEDIA TYPE
+	
+dph3:	dph     0,idehd$dpb0
+	
+; -----------------------------------------------------------------------------
+
+				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 4:
+				; 
+	defw	hdwrt		; HARD DISK WRITE ROUTINE
+	defw	hdrd		; HARD DISK READ ROUTINE
+	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+	defb	4		; RELATIVE DRIVE 4 ON THIS CONTROLLER
+	defb	0		; MEDIA TYPE
+	
+dph4:	dph     0,idehd$dpb0
+	
+; -----------------------------------------------------------------------------
+
+				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 5:
+				; 
+	defw	hdwrt		; HARD DISK WRITE ROUTINE
+	defw	hdrd		; HARD DISK READ ROUTINE
+	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+	defb	5		; RELATIVE DRIVE 5 ON THIS CONTROLLER
+	defb	0		; MEDIA TYPE
+	
+dph5:	dph     0,idehd$dpb0
+	
+; -----------------------------------------------------------------------------
+
+				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 6:
+				; 
+	defw	hdwrt		; HARD DISK WRITE ROUTINE
+	defw	hdrd		; HARD DISK READ ROUTINE
+	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+	defb	6		; RELATIVE DRIVE 6 ON THIS CONTROLLER
+	defb	0		; MEDIA TYPE
+	
+dph6:	dph     0,idehd$dpb0
+	
+; -----------------------------------------------------------------------------
+
+				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 7:
+				; 
+	defw	hdwrt		; HARD DISK WRITE ROUTINE
+	defw	hdrd		; HARD DISK READ ROUTINE
+	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+	defb	7		; RELATIVE DRIVE 7 ON THIS CONTROLLER
+	defb	0		; MEDIA TYPE
+	
+dph7:	dph     0,idehd$dpb0
+	
+; -----------------------------------------------------------------------------
+
+				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 8:
+				; 
+	defw	hdwrt		; HARD DISK WRITE ROUTINE
+	defw	hdrd		; HARD DISK READ ROUTINE
+	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+	defb	8		; RELATIVE DRIVE 8 ON THIS CONTROLLER
+	defb	0		; MEDIA TYPE
+	
+dph8:	dph     0,idehd$dpb0
+	
+; -----------------------------------------------------------------------------
+
+				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 9:
+				; 
+	defw	hdwrt		; HARD DISK WRITE ROUTINE
+	defw	hdrd		; HARD DISK READ ROUTINE
+	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+	defb	9		; RELATIVE DRIVE 9 ON THIS CONTROLLER
+	defb	0		; MEDIA TYPE
+	
+dph9:	dph     0,idehd$dpb0
+	
+; -----------------------------------------------------------------------------
+
+				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 10:
+				; 
+	defw	hdwrt		; HARD DISK WRITE ROUTINE
+	defw	hdrd		; HARD DISK READ ROUTINE
+	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+	defb	10		; RELATIVE DRIVE 10 ON THIS CONTROLLER
+	defb	0		; MEDIA TYPE
+	
+dph10:	dph     0,idehd$dpb0
+	
+; -----------------------------------------------------------------------------
+
+				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 11:
+				; 
+	defw	hdwrt		; HARD DISK WRITE ROUTINE
+	defw	hdrd		; HARD DISK READ ROUTINE
+	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+	defb	11		; RELATIVE DRIVE 11 ON THIS CONTROLLER
+	defb	0		; MEDIA TYPE
+	
+dph11:	dph     0,idehd$dpb0
+	
+; -----------------------------------------------------------------------------
+
+				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 12:
+				; 
+	defw	hdwrt		; HARD DISK WRITE ROUTINE
+	defw	hdrd		; HARD DISK READ ROUTINE
+	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+	defb	12		; RELATIVE DRIVE 12 ON THIS CONTROLLER
+	defb	0		; MEDIA TYPE
+	
+dph12:	dph     0,idehd$dpb0
+	
+; -----------------------------------------------------------------------------
+
+				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 13:
+				; 
+	defw	hdwrt		; HARD DISK WRITE ROUTINE
+	defw	hdrd		; HARD DISK READ ROUTINE
+	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+	defb	13		; RELATIVE DRIVE 13 ON THIS CONTROLLER
+	defb	0		; MEDIA TYPE
+	
+dph13:	dph     0,idehd$dpb0
+	
+; -----------------------------------------------------------------------------
+
+				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 14:
+				; 
+	defw	hdwrt		; HARD DISK WRITE ROUTINE
+	defw	hdrd		; HARD DISK READ ROUTINE
+	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+	defb	14		; RELATIVE DRIVE 14 ON THIS CONTROLLER
+	defb	0		; MEDIA TYPE
+	
+dph14:	dph     0,idehd$dpb0
+	
+; -----------------------------------------------------------------------------
+
+				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 15:
+				; 
+	defw	hdwrt		; HARD DISK WRITE ROUTINE
+	defw	hdrd		; HARD DISK READ ROUTINE
+	defw	hdlogin		; HARD DISK LOGIN PROCEDURE
+	defw	hdinit		; HARD DISK DRIVE INITIALIZATION ROUTINE
+	defb	15		; RELATIVE DRIVE 15 ON THIS CONTROLLER
+	defb	0		; MEDIA TYPE
+	
+dph15:	dph     0,idehd$dpb0
+	
+; -----------------------------------------------------------------------------
+;
+; Disk Drive Table or DTBL (So the file DRVTBL.ASM is not needed)
+;
+; -----------------------------------------------------------------------------
+
+	 if	banked
+				; --------------------------
+	dseg			; BANKED SYSTEMS CAN HAVE DRIVE TABLE IN THE OP SYS BANK
+				; --------------------------
+	 else
+				; --------------------------
+	cseg			; NON-BANKED SYSTEMS HAVE NO CHOICE BUT TO PUT IN THE CO
+				; --------------------------
+	 endif
+
+@dtbl:	
+	defw	dph0		; A:
+	defw	dph1		; B:
+	defw	dph2		; C:
+	defw	dph3		; D:
+	defw	dph4		; E:
+	defw	dph5		; F:
+	defw	dph6		; G:
+	defw	dph7		; H:
+	defw	dph8		; I:
+	defw	dph9		; J:
+	defw	dph10		; K:
+	defw	dph11		; L:
+	defw	dph12		; M:
+	defw	dph13		; N:
+	defw	dph14		; O:
+	defw	dph15		; P:
+	
+; -----------------------------------------------------------------------------
+;    
+; Disk Parameter Block  table (DPB)
+;
+; DBP macro parameters:
+; Bytes per sector, num sec, num trk, block size, dir entries, reserved trk, HD
+;
+; -----------------------------------------------------------------------------
+
+				; --------------------------
+	cseg			; MAKE SURE DPB'S ARE IN COMMON MEMORY
+				; --------------------------
+	
+idehd$dpb0:
+	dpb 512,32,512,4096,512,1,8000h
+
+; -----------------------------------------------------------------------------
+;
+;                     >>>>>>> READ CAREFULLY <<<<<<<<
+;
+; NOTE: the disk capacity *MUST* be *LESS* than 8MBytes with DPB macro!!!
+; (See CP/M 3 System Guide par. 3.3.5)
+; But Z80-MBC2 virtual disks are exactly 8Mbytes (512 * 512 * 32),
+; so I've used a little trick to keep things simple and avoid to do the table
+; by hand... I've used for all disk an 1 reserved track, so the available 
+; disk capacity is less that 8MB (and the DPB macro works...)
+; Yeahhh... I'm lazy... :-)
+; -----------------------------------------------------------------------------
+	
+	 if	banked
+				; --------------------------
+	dseg			; CAN SET BACK TO BANKED SEGMENT IF BANKING
+				; --------------------------
+	 endif
+
+;----------------------- INITIALIZE THE HARD DISK  ----------------------------
+	
+hdinit:	
+	ret			; Nothing to initialize
+
+
+hdlogin:
+				; This entry is called when a logical drive is about to
+				; be logged into for the purpose of density determination.
+				; 
+				; It may adjust the parameters contained in the disk
+				; parameter header pointed at by <DE>
+	ret			; We have nothing to do
+
+
+;------------------------------------------------------------------------------
+;      HARD DISK WRITE/READ A SECTOR AT @TRK, @SECT of disk @ADRV TO Address at
+;      Return A=00H if no Error, A=01H if Non-recov Err
+;
+;
+;      >>>> WARNING <<<<: In a banked system @ADRV, @RDRV, @DBNK, @TRK, @SECT, 
+;                         all in bank 0
+;
+;------------------------------------------------------------------------------
+
+				; relative drive number in @rdrv (8 bits)
+				; absolute drive number in @adrv (8 bits)
+				; disk transfer address in @dma (16 bits)
+				; disk transfer bank    in @dbnk (8 bits)
+				; disk track address    in @trk (16 bits)
+				; disk sector address   in @sect (16 bits)
+				; pointer to XDPH in <DE>
+
+;------------------------------------------------------------------------------
+
+lastdsk:
+	defb	0ffh		; Last disk number (= ff after cold boot)
+
+hdwrt:				; Write a sector (512 bytes)
+	push	bc
+	push	hl
+	call	setdts		; Set disk, track, sector (after return HL 
+	 if	banked		; Banked system handling
+	jp	bhdwrt
+				; --------------------------
+	cseg			; This I/O part must be in the common bank
+				; --------------------------
+bhdwrt:	
+	ld	a,(@cbnk)	; Save current bank in the stack
+	push	af
+	ld	a,(@dbnk)	; Select the bank for disk I/O
+	call	?bnksl
+	 endif
+				; 
+				; Write current host sector (512 byte) to DMA (HL = DMA)
+	ld	c, exc$wr$opcd	; Set the EXECUTE WRITE OPCODE port into C
+	ld	a, wrtsect$opc	; Select WRITESECT opcode (IOS)
+	out	(sto$opcd),a
+	ld	b, 0		; Byte counter = 256
+	otir			; Write 256 byte
+	otir			; Write 256 byte
+	 if	banked
+	pop	af		; Restore previous bank
+	call	?bnksl
+	jp	checkwr
+				; --------------------------
+	dseg
+				; --------------------------
+	 endif
+				; 
+				; Check for errors
+checkwr:
+	ld	a, errdsk$opc	; Select ERRDISK opcode (IOS)
+	out	(sto$opcd),a
+	in	a,(exc$rd$opcd)	; Read error code into A
+	or	a		; Set Z flag
+	pop	hl
+	pop	bc
+	ret	z		; Return with A = 0 (no error)
+	ld	a, 1		; Set error code
+	ret			; Return with A = 1 (read error)
+
+
+;------------------------------------------------------------------------------
+
+
+hdrd:				; Read a sector (512 bytes)
+	push	bc
+	push	hl
+	call	setdts		; Set disk, track, sector (after return HL =
+	 if	banked		; Banked system handling
+	jp	bhdrd
+				; --------------------------
+	cseg			; This I/O part must be in the common bank
+				; --------------------------
+bhdrd:	
+	ld	a,(@cbnk)	; Save current bank in the stack
+	push	af
+	ld	a,(@dbnk)	; Select the bank for disk I/O
+	call	?bnksl
+	 endif
+				; 
+				; Read current host sector (512 byte) to DMA (HL = DMA)
+	ld	c, exc$rd$opcd	; Set the EXECUTE READ OPCODE port into C
+	ld	a, rdsect$opc	; Select READSECT opcode (IOS)
+	out	(sto$opcd),a
+	ld	b, 0		; Byte counter = 256
+	inir			; Read 256 byte
+	inir			; Read 256 byte
+	 if	banked
+	pop	af		; Restore previous bank
+	call	?bnksl
+	jp	checkrd
+				; --------------------------
+	dseg
+				; --------------------------
+	 endif
+				; 
+				; Check for errors
+checkrd:
+	ld	a, errdsk$opc	; Select ERRDISK opcode (IOS)
+	out	(sto$opcd),a
+	in	a,(exc$rd$opcd)	; Read error code into A
+	or	a		; Set Z flag
+	pop	hl
+	pop	bc
+	ret	z		; Return with A = 0 (no error)
+	ld	a, 1		; Set error code
+	ret			; Return with A = 1 (read error)
+
+;------------------------------------------------------------------------------
+	
+; Set disk, track and sector routine for a read or write operation and load int
+; HL the address in @DMA (used for the read/write operaton)
+
+setdts:				; Select the disk, track and sector
+				; 
+				; Select @ADRV host disk
+	ld	a,(@adrv)	; A = new disk
+	ld	b, a		; B = new disk
+	ld	a,(lastdsk)	; A = last disk number
+	cp	b		; Previous disk = new disk?
+	jr	z,settrack	; Yes, jump to track selection
+	ld	a, seldisk$opc	; No, select SELDISK opcode (IOS)
+	out	(sto$opcd),a
+	ld	a, b		; A = new disk
+	out	(exc$wr$opcd),a
+	ld	(lastdsk),a	; Update last disk number 
+				; 
+				; Select @TRK host track
+settrack:
+	ld	a, seltrck$opc	; Select SELTRACK opcode (IOS)
+	out	(sto$opcd),a
+	ld	a,(@trk)	; Select the track number LSB
+	out	(exc$wr$opcd),a
+	ld	a,(@trk + 1)	; Select the track number MSB
+	out	(exc$wr$opcd),a
+				; 
+				; Select @SECT host sector
+	ld	a, selsect$opc	; Select SELSECT opcode (IOS)
+	out	(sto$opcd),a
+	ld	a,(@sect)	; Select the sector number (LSB only)
+	out	(exc$wr$opcd),a
+				; 
+				; Load into HL the address in @DMA
+	ld	hl,(@dma)
+	ret
+
+	end
+                                                                                                           

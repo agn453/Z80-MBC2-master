@@ -1,0 +1,365 @@
+	title	'CP/M 3 LOADER BIOS for Z80-MBC2 (A040618)'
+	.z80
+;	Converted to Z80 mnemonics via XIZ by Tony Nicholson
+;	Assemble using Microsoft M80 or Hector Peraza's ZSM4
+;
+;******************************************************************************
+;
+; LRDBIOS.ASM - S180918
+; CP/M 3.0 CPMLDR BIOS FOR THE Z80-MBC2 (HW ref. A040618)
+;
+; Required IOS S220718-R190918 (or newer revisions until otherwise stated)
+;
+; NOTE: Use the RMAC.COM relocatable assembler
+;
+;
+;
+;******************************************************************************
+
+true	equ	-1		; DEFINE LOGICAL VALUES:
+false	equ	not true
+
+bell	equ	07h
+eos	equ	00h		; End of string
+cr	equ	0dh
+lf	equ	0ah
+
+; -----------------------------------------------------------------------------
+;
+; Z80-MBC2 IOS equates
+;
+; -----------------------------------------------------------------------------
+
+exc$wr$opcd equ	000h		; Address of the EXECUTE WRITE OPCODE write port
+exc$rd$opcd equ	000h		; Address of the EXECUTE READ OPCODE read port
+sto$opcd equ	001h		; Address of the STORE OPCODE write port
+serial$rx equ	001h		; Address of the SERIAL RX read port
+sertx$opc equ	001h		; SERIAL TX opcode
+seldisk$opc equ	009h		; SELDISK opcode
+seltrck$opc equ	00ah		; SELTRACK opcode
+selsect$opc equ	00bh		; SELSECT opcode
+wrtsect$opc equ	00ch		; WRITESECT opcode
+sysflag$opc equ	083h		; SYSFLAG opcode
+datetim$opc equ	084h		; DATETIME opcode
+errdsk$opc equ	085h		; ERRDISK opcode
+rdsect$opc equ	086h		; READSECT opcode
+sdmount$opc equ	087h		; SDMOUNT opcode
+
+; INCLUDE CP/M 3.0 MACRO LIBRARY:
+
+	include cpm3m80.lib
+
+;--------------------------------------------------------------------------
+;	                    CODE BEGINS HERE:
+;--------------------------------------------------------------------------	
+
+	jp	boot		; <----- INITIAL ENTRY ON COLD START
+	jp	wboot		; REENTRY ON PROGRAM EXIT, WARM START
+	jp	const		; RETURN CONSOLE INPUT STATUS
+	jp	conin		; RETURN CONSOLE INPUT CHARACTER
+	jp	conout		; <------------ SEND CONSOLE OUTPUT CHARACTER
+	jp	list		; SEND LIST OUTPUT CHARACTER
+	jp	auxout		; SEND AUXILLIARY OUTPUT CHARACTER
+	jp	auxin		; RETURN AUXILLIARY INPUT CHARACTER
+	jp	home		; SET DISKS TO LOGICAL HOME
+	jp	seldsk		; SELECT DISK DRIVE RETURN DISK PARAMETER INFO
+	jp	settrk		; SET DISK TRACK
+	jp	setsec		; SET DISK SECTOR
+	jp	setdma		; SET DISK I/O MEMORY ADDRESS
+	jp	read		; <----------- READ PHYSICAL BLOCK(S)
+	jp	write		; WRITE PHYSICAL BLOCK(S)
+	jp	listst		; RETURN LIST DEVICE STATUS
+	jp	sectrn		; TRANSLATE LOGICAL TO PHYSICAL SECTOR
+	jp	conost		; RETURN CONSOLE OUTPUT STATUS
+	jp	auxist		; RETURN AUXILLIARY INPUT STATUS
+	jp	auxost		; RETURN AUXILLIARY OUTPUT STATUS
+	jp	devtbl		; RETURN ADDRESS OF DEVICE DEFINITION TABLE
+	jp	?cinit		; CHANGE BAUD RATE OF DEVICE
+	jp	getdrv		; RETURN ADDRESS OF DISK DRIVE TABLE
+	jp	multio		; SET MULTIPLE RECORD COUNT FOR DISK I/O
+	jp	flush		; FLUSH BIOS MAINTAINED DISK CACHING
+	jp	?move		; BLOCK MOVE MEMORY TO MEMORY
+	jp	?time		; SIGNAL TIME AND DATE OPERATION
+	jp	bnksel		; SEL BANK FOR CODE EXECUTION AND DEFAULT DMA
+	jp	setbnk		; SELECT DIFFERENT BANK FOR DISK I/O DMA OPS.
+	jp	?xmove		; SET SOURCE AND DEST. BANKS FOR ONE OPERATION
+	jp	0		; RESERVED FOR FUTURE EXPANSION
+	jp	0		;     DITTO
+	jp	0		;     DITTO
+
+
+const:	
+	ret			; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
+
+listst:	
+	ret			; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
+
+auxist:	
+	ret			; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
+
+auxost:	
+	ret			; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
+
+flush:	
+	xor	a		; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
+	ret			; RETURN A FALSE STATUS
+
+list:	
+	ret			; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
+
+auxout:	
+	ret			; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
+
+devtbl:	
+	ret			; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
+
+?cinit:	
+	ret			; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
+
+multio:	
+	ret			; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
+
+?time:	
+	ret			; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
+
+bnksel:	
+	ret			; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
+
+setbnk:	
+	ret			; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
+
+?xmove:	
+	ret			; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
+
+conin:	
+	ld	a,'Z'-40h	; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
+	ret
+
+auxin:	
+	ld	a,'Z'-40h	; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
+	ret
+
+conout:
+				; Write Console Character out. Output char is in C
+	ld	a, sertx$opc	; A = SERIAL TX opcode
+	out	(sto$opcd),a	; Write the opcode
+	ld	a, c
+	out	(exc$wr$opcd),a	; Send A to serial Tx
+	ret
+
+conost:
+				; Return Output Status of Console. Return A=00H if not ready, A=0FFH if
+	ld	a, 0ffh		; Always ready
+	ret
+
+?move:	
+	ex	de,hl
+	ldir
+	ex	de,hl
+	ret
+
+seldsk:	
+	ld	hl,dph0		; RETURN DPH ADDRESS FOR DRIVE A:
+	ret
+
+home:	
+	ld	bc,0		; HOME SELECTED DRIVE -- TREAT AS SETTRK(0):
+
+settrk:	
+	ld (@trk),bc		; ROUTINE SETS TRACK TO ACCESS ON NEXT READ
+	ret
+	
+setsec:	
+	ld (@sect),bc		; ROUTINE SETS SECTOR TO ACCESS ON NEXT READ
+	ret
+
+setdma:	
+	ld (@dma),bc		; ROUTINE SETS DISK MEMORY ADDRESS FOR READ
+	ret
+
+sectrn:	
+	ld	l,c		; NO TRANSLATION FOR HDISK
+	ld	h,b
+	ret
+
+getdrv:	
+	ld	hl,@dtbl	; RETURN ADDRESS OF DISK DRIVE TABLE:
+	ret
+
+dcbinit:
+	ret			; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
+
+write:	
+	xor	a		; RETURN GOOD RESULT CODE
+	ret
+
+wboot:	
+	ret			; WARM BOOT IS NOT USED IN LOADER BIOS
+
+;--------------------------------------------------------------------------
+;                                  BOOT
+;                   ROUTINE DOES COLD BOOT INITIALIZATION:
+;--------------------------------------------------------------------------
+
+
+boot:
+	ld	hl, biosmsg	; Print a message
+	call	puts
+	ret
+
+;------------------------------------------------------------------------------
+;	   HARD DISK READ A SECTOR AT @TRK, @SECT TO Address at @DMA
+;      Return A=00H if no Error, A=01H if Non-recov Err
+;------------------------------------------------------------------------------
+
+read:
+	push	bc
+	push	hl
+				; 
+				; Select host disk 0
+	ld	a,(lastdsk)	; A = last disk number
+	or	a		; Set Z flag. Last disk = 0?
+	jr	z,settrack	; Yes, jump to track selection
+	ld	a, seldisk$opc	; No, select SELDISK opcode (IOS)
+	out	(sto$opcd),a
+	xor	a		; Select the disk 0
+	out	(exc$wr$opcd),a
+	ld	(lastdsk),a	; Update last disk number        
+				; 
+				; Select @TRK host track
+settrack:
+	ld	a, seltrck$opc	; Select SELTRACK opcode (IOS)
+	out	(sto$opcd),a
+	ld	a,(@trk)	; Select the track number LSB
+	out	(exc$wr$opcd),a
+	ld	a,(@trk + 1)	; Select the track number MSB
+	out	(exc$wr$opcd),a
+				; 
+				; Select @SECT host sector
+	ld	a, selsect$opc	; Select SELSECT opcode (IOS)
+	out	(sto$opcd),a
+	ld	a,(@sect)	; Select the sector number (LSB only)
+	out	(exc$wr$opcd),a
+				; 
+				; Read current host sector (512 byte) to DMA
+	ld	c, exc$rd$opcd	; Set the EXECUTE READ OPCODE port into C
+	ld	hl,(@dma)	; HL = DMA address
+	ld	a, rdsect$opc	; Select READSECT opcode (IOS)
+	out	(sto$opcd),a
+	ld	b, 0		; Byte counter = 256
+	inir			; Read 256 byte to hstbuf
+	inir			; Read 256 byte to hstbuf
+				; 
+				; Check for errors
+	ld	a, errdsk$opc	; Select ERRDISK opcode (IOS)
+	out	(sto$opcd),a
+	in	a,(exc$rd$opcd)	; Read error code into A
+	or	a		; Set Z flag
+	pop	hl
+	pop	bc
+	ret	z		; Return with A = 0 (no error)
+	ld	a, 1		; Set error code
+	ret			; Return with A = 1 (read error)
+	
+lastdsk:defb	0ffh		; Last disk number (= ff after cold boot)
+
+
+;=============================================================================
+;                          Z80-MBC2 SUPPORT ROUTINES
+;============================================================================= 
+
+; ---------------------------------------------------------------------------- 
+;
+; Send a string to the serial line, HL holds the pointer to the string.
+; NOTE: Only A and HL are used
+;
+; ---------------------------------------------------------------------------- 
+
+puts:	
+	ld	a,(hl)		; A = (HL) = current char to print
+	cp	eos		; End of string reached?
+	ret	z		; Yes, return
+	ld	a, sertx$opc	; A = SERIAL TX opcode
+	out	(sto$opcd),a	; Write the opcode
+	ld	a,(hl)		; A = (HL) = current char to print
+	out	(exc$wr$opcd),a	; Print A
+	inc	hl		; Increment character pointer
+	jr       puts		; Transmit next character
+
+
+; --------------------------------------------------------------------------- ;
+;
+; MESSAGES
+;
+; --------------------------------------------------------------------------- ;
+
+biosmsg:defb	cr, lf, lf, 'Z80-MBC2 CPMLDR BIOS - S180918', cr, lf, eos
+
+@trk:	defs	2		; 2 BYTES FOR NEXT TRACK TO READ OR WRITE
+@dma:	defs	2		; 2 BYTES FOR NEXT DMA ADDRESS
+@sect:	defs	2		; 2 BYTES FOR SECTOR
+
+
+;--------------------------------------------------------
+; BUILD CPM3 DPH'S ETC USING MACROS FOR HDISK AND BY HAND
+;--------------------------------------------------------
+	
+				; DISK DRIVE TABLE:
+@dtbl:	defw	dph0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+				; DRIVE A DISK PARAMETER HEADER:
+	defw	write		; WRITE ROUTINE
+	defw	read		; READ ROUTINE
+	defw	seldsk		; LOGIN PROCEDURE
+	defw	dcbinit		; DRIVE INITIALIZATION ROUTINE
+	defb	0		; RELATIVE DRIVE 0 ON THIS CONTROLLER
+	defb	0		; MEDIA TYPE ALWAYS KNOWN FOR HARD DISK
+dph0:	defw	0		; TRANSLATION VECTOR
+	defb	0,0,0,0,0,0,0,0,0
+	defb	0		; MEDIA FLAG
+	defw	hd$dpb		; ADDRESS OF DISK PARAMETER BLOCK
+	defw	csv		; CHECKSUM VECTOR
+	defw	alv		; ALLOCATION VECTOR
+	defw	dirbcb		; DIRECTORY BUFFER CONTROL BLOCK
+	defw	databcb		; DATA BUFFER CONTROL BLOCK
+	defw	0ffffh		; NO HASHING
+	defb	0		; HASH BANK
+
+				; HARD DISK PARAMETER BLOCK:
+				; Bytes per sector, num sec, num trk, block size, dir entries, res trk, HD 
+	
+hd$dpb:	dpb     512,32,512,4096,512,1,8000h
+
+				; DIRECTORY BUFFER CONTROL BLOCK:
+dirbcb:
+	defb	0ffh		; DRIVE 0
+	defs	3
+	defs	1
+	defs	1
+	defs	2
+	defs	2
+	defw	dirbuf		; POINTER TO DIRECTORY BUFFER
+
+				; DATA BUFFER CONTROL BLOCK:
+databcb:
+	defb	0ffh		; DRIVE 0
+	defs	3
+	defs	1
+	defs	1
+	defs	2
+	defs	2
+	defw	databuf		; POINTER TO DATA BUFFER
+
+
+				; DIRECTORY BUFFER
+dirbuf:	defs	512		; 1 PHYSICAL SECTOR
+
+				; DATA BUFFER:
+databuf:defs	512		; 1 PHYSICAL SECTOR
+
+				; DRIVE ALLOCATION VECTOR:
+alv:	defs	1000		; SPACE FOR DOUBLE BIT ALLOCATION VECTORS
+csv:				; NO CHECKSUM VECTOR REQUIRED FOR A HDISK
+
+	end
+                                                                                                                

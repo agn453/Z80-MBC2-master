@@ -1,0 +1,217 @@
+MEMR.DOC - INFORMATION ABOUT THIS MEMORY TEST
+
+	The MEMR Rasmussen memory test has been developed at
+Lifeboat Associates so that our customers may easily
+check their memory system. We recommend frequent testing of
+new memory boards until they are burned in, which takes a
+couple of months, and occasional checkups after that.
+
+	The program performs a battery of tests to test
+memory under a variety of conditions.  If a test fails 
+in any given memory location, that location will be displayed
+on the console along with the byte that should have been
+in memory and the actual value in both HEX and binary bits.
+This may be a further aid to find out what is wrong.
+If multiple errors are reported, the test will display a screen
+full of error reports, one to a line, and then wait for
+you to press a key to continue.  Until the screen if full of
+error reports, the test will continuously cycle.
+
+	There is one test that MEMR can't do however, and that
+is performance under daily use.  If you seem to have unexplained
+problems with your computer such as program crashing, try
+this test.  It may detect a memory problem which can then be
+dealt with, and if not, proably eliminates memory as a source.
+
+	This memory test will use default addresses if
+the starting and ending address questions are answered with a "CR".
+It can be interrupted by pressing the console ESC (escape) key.
+
+	The forms of the test are:
+	MEMR		Gives complete battery of tests
+	MEMR T		Above plus display of memory top
+			and quick complement test of all RAM.
+	MEMR R		Random number test only.
+	MEMR M		M1 cycle test only displays each address
+
+	Eg. Type "MEMR T" followed by carrige return for random test.
+
+	This test is designed to display the most common
+problems first and most uncommon ones last.
+For example, you may test for gross defects by simply
+typing "MEMR T" which will start out with the quick test
+of all memory.  
+The test will continue over and over until the you terminate
+by pressing the ESC key.
+
+Generally memory chip failures will be found within 5 seconds.
+The test takes several minutes to run all phases in a 32k board.
+
+	To completely test for all address open and short
+combinations, the test should be run over a 4K boundry.
+Then run the test over the full range. There are some
+subtle things that get missed if you only run the
+test over the full range and not 4K at a time.
+
+If the memory board passes these tests and will
+run for an hour on the random numbers test
+without a problem, look elsewhere for your troubles.
+
+
+The following tests are performed and explained in detail below:
+
+	1. Fast complement test of all memory.
+	2. Bit stuck high or low test.
+	3. Adjacent bits shorted test.
+	4. Checkboard pattern test.
+	5. Walking bit left test.
+	6. Walking bit right test.
+	7. Address line test.
+	8. Random number test.
+	9. M1 cycle test.
+
+FAST COMPLEMENT TEST:
+This is a test of ALL MEMORY starting at 0 to top of RAM.
+It loads each byte and tries to store the complement.
+Tests if properly complemented and restores original byte.
+This is the only test that can test where MEMR runs
+in the TPA (from 0 to approx 800H) and the BIOS area
+which contains the console drivers.
+
+BIT STUCK TEST:
+1. Fills test area with 0FFH and checks for 0FFH.
+2. Then fills test area with 0's and tests for 0's.
+3. Then re-fills with 0FFH and tests
+   just in case the bit was originally high in (1.).
+
+ADJACENT BIT SHORTED TEST:
+Sets a single bit in all bytes high.
+Then checks if a bit is shorted to the
+ones on each side.
+The test repeats 8 times, rotating
+the test bit from LSB to MSB.
+
+CHECKERBOARD TEST:
+Fill memory with 0AAH, 55H pattern and check.
+This forms an alternating "checkerboard".
+Then reverse the pattern and re-check.
+
+WALKING BIT TEST:
+Fill memory with one bit set for each byte.
+The bit rotates at memory increases.
+For example, byte 1 has bit 1 set, byte 2 bit 2 etc.
+Then memory is checked for the proper pattern.
+This is repeated 8 times, rotating the bit each time.
+Then, the whole procedure is repeated rotating
+the opposite way.
+This is a very severe test that frequently detects
+errors that other tests in the battery do not.
+Don't be surprised if the walking bit "right" test
+detects errors that "left" doesn't, or vice versa.
+Sometimes memory developes strange pattern sensitive
+errors that are most difficult to find.
+
+ADDRESS LINE SHORTED TEST:
+This test will detect addressing problems in memory boards.
+It fills all memory with 55H, then writes an 0AAH
+at the lowest memory location tested.
+It then rechecks the rest of memory to see if it is still 55H.
+It then clears the original location of AAH and writes
+writes the AAH into the next location.
+Then does same with location 2,4,8,etc setting
+a new address bit high each time and testing all of memory.
+If any address bit is shorted to another,
+the test will find an 0AAH in another location
+than the place it wrote one.
+
+RANDOM NUMBER TEST:
+A random number routine generates an 8 bit number
+pattern and writes it through all test memory.
+It then re-inserts the same seed to the routine
+and test reads the memory. A new seed is generated
+and the exercise is repeated with a new pattern.
+This test goes thru 8 cycles each time the battery
+is run.  If "MEMR R" is used, it cycles continuously
+until terminated with an ESC.
+
+M1 CYCLE TEST
+This tests the M1 cycle time for executing instructions
+which is different than the time to simply read memory
+in the Z-80.  The times are the same in 8080 so the
+test is not especially useful for them.
+A small segment of executing code "worms" its way thru
+memory, reporting the results of its execution at each
+memory location.  Marginal memory may pass all the other
+tests but fail to execute properly at a given address.
+When this happens, the test normally reports the error
+location in the standard way.  However, the faulty execution
+may cause the test to "bomb" at this point.
+
+By running the M1 test in the form "MEMR M", only this
+test will run, reporting each address as it executes.
+If a memory failure causes the test to bomb, the last 
+address displayed on the screen locates the failure address.
+
+Please note that the M1 test (only) uses restart locations
+2 and 5 in its operation, and also inserts an error trap
+at restart location 7, which is the most likely landing
+place for a program gone wild.  That is, a program gone
+haywire, jumping randomly all over memory, is likely at some
+point to land in a location that has no memory which will
+appear to contain the instruction 0FFH, which is a restart 7,
+which causes the CPU to immediately jump to 38H, the restart
+7 location. We mention this because, it your computer happens
+to use restarts 2, 5 or 7 for critical operations, this test
+may not run.  That's why it is last.
+
+CUSTOMIZATION NOTES:
+
+	This test is designed to use the CP/M BIOS console
+input/output drivers.  This means that the BIOS area itself
+may not be tested.  If you have a prom monitor or wish to
+write your own I/O routines, this test may be modified to
+use them.
+
+	You will find a jump table at the start of MEMR
+which contains jumps to routines that perform the functions
+of return to monitor, console status, input and output.
+The console routines use the CP/M conventions.  That is
+for example, console output is considered to be from the
+C register, etc. The portion of the table that may be
+patched is as follows.
+
+	ORG	100H		BEGINNING OF TPA
+	JMP	START		STARTS MEMR, DONT CHANGE THIS ONE.
+	JMP	CINIT		INITIALIZE CONSOLE OR WHATEVER.
+	JMP	MONITOR		CONTROL C EXIT COMES HERE.
+	JMP	CONST		CONSOLE STATUS 0FFH=READY, 0=NOT.
+	JMP	CONIN		CONSOLE INPUT TO A.
+	JMP	CONOUT		CONSOLE OUTPUT FROM C.
+	DW	TFIRST		FIRST BYTE TESTED.
+
+	If you wish to simply add on your I/O routines
+to the end of this program, start your patches at TFIRST
+and modify TFIRST to be wherever your patches end.
+This will change the default starting address so MEMR doesn't
+scramble your routines. MONITOR is normally a CP/M warm boot
+but could be a jump to your monitor, cold boot, etc.
+
+
+FINAL AUTHORS NOTE
+
+	Good luck with your use of Lifeboat's memory test.
+If you find any strange bugs or think of other tests that
+might be usefully added to the battery, please contact me.
+
+September 5, 1980		Larry Alkoff
+
+
+
+
+
+
+
+
+
+
+

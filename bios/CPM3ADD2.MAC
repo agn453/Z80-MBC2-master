@@ -1,0 +1,665 @@
+	title	CPM3ADD2 - Display BIOS and disk parameter information
+	.z80
+;	Converted from CPM+ADD2.ASM
+;	using XIZ to Z80 mnemonics by Tony Nicholson
+;
+;	Assemble with Microsoft M80 or Hector Peraza's ZSM4 assembler.
+;
+;					Jerry Levy
+;					(215) 657-0898
+;					voice - evenings
+;
+;	This should work for all CP/M-Plus implementations.
+; 
+;	This all began when I needed a few addresses to install BYE5.
+;	Because I was working with three different bios's on my
+;	Apple ][ (ALS CP/M Card bios's 3.01b2, 3.01c2, and the Public
+;	Domain CP-PLUG bios 3.02b), I decided to write a short program.
+;	It just got out of hand...
+;
+;	ALS, for the ALS CP/M Card on Apple ][, added two special bios
+;	functions in v. 3.01b1, a third in 3.01b2, and a fourth in 3.01c2.
+;	CP-PLUG, also for the ALS CP/M Card, added three.  As the new
+;	functions are all non-standard, I've used an equate to isolate
+;	the additions.  The version uploaded is vanilla, that is,
+;	ALSCARD EQU NO.
+;
+;	Where I could, in the output produced, I tried to spell things as
+;	they are spelled in DRI's "CP/M Plus System Guide".
+; 
+;	Feel free to modify and add special stuff for other implementations,
+;	but please note below that you've done it in the version log.
+;	Isolate hardware-specific stuff by using equates, and indicate your
+;	name.  Most recent change last.  If you can, leave a copy on George
+;	Peace's Fog #10 RCP/M (717-657-8699) to allow me to keep track
+;	of changes.
+;
+;	I've seen address programs for CP/M 2.2 but they don't quite
+;	cut it for CP/M Plus.
+;							-JL
+;-------------------
+; 15-Dec-85	Added more addresses/values, a few dumps, other changes.
+;   v 2							-Jerry Levy
+;
+; 22-Nov-85	Created.  ALS-CP/M Card-specific bios functions listed
+;   v 1		if ALSCARD EQU YES, otherwise generic CP/M 3.
+;							-Jerry Levy
+;-------------------
+;
+no	equ	0
+yes	equ	not no
+;
+alscard equ	no
+agn	equ	yes
+;
+bdos	equ	0005
+;
+$conin	equ	01
+$conout	equ	02
+$print	equ	09
+;	
+cr	equ	0dh
+lf	equ	0ah
+;
+seldsk	equ	09		; Bios function to select drive
+;
+	cseg
+	jp	signon
+;
+hello:	defb	cr,lf,'Some useful CP/M-Plus addresses and register contents',cr,lf
+	defb	'CPM+ADD v.2 15-Dec-85 Jerry Levy',cr,lf,cr,lf
+	 if	alscard
+	defb	'ALS CP/M Card, CP/M 3.x on Apple ][+/e',cr,lf
+	 else
+	defb	'Generic CP/M 3.x ',cr,lf
+	 endif
+;
+  if not agn
+	defb	cr,lf,'Control-S stops scrolling, Control-Q resumes.',cr,lf
+	defb	'Press any other key to continue...',cr,lf,'$'
+  else
+	defb	cr,lf,'$'
+  endif
+;
+signon:	ld	de,hello
+	call	print
+  if not agn
+	ld	c,$conin		; Time to read "hello"
+	call	bdos
+  endif
+	xor	a
+	ld	(storage$flag),a
+	call	bios$addresses	; Bios addr's,convert to ascii,place in text 
+	call	scb$locns	; Addresses and contents via SCB accesses
+	call	misc$locns	; Others
+	call	crlf
+	ld	de,text		; Output table of addresses, etc.
+	call	print
+	call	dumps		; Dumps dph's, dpb's, scb
+	ret
+;
+; end of main program
+;----------------------
+;
+; bios addresses: both of jumps in the jump table, and of bios
+; routines themselves
+;
+bios$addresses:
+	ld	hl,(0001h)	; Bios pointer to warm boot address in jmp tbl
+	dec	hl
+	dec	hl
+	dec	hl		; Back-up to cboot
+	ld	de,biosbase+13	; Where to put ascii address of jmp tbl entry
+	call	hlout		; Translate hex biosbase address to ascii
+	ld	de,cboot+13	; Also put same address here
+next:	call	hlout		; Cboot or next jmp address to ascii
+	push	hl		; Preserving HL, advance DE to next storage addr
+	ld	hl,8
+	add	hl,de
+	ex	de,hl
+	pop	hl
+	push	hl
+	push	de		; And save it
+	inc	hl		; Point to address of routine
+	call	into$hl
+	pop	de
+	call	hlout
+	pop	hl
+	inc	hl
+	inc	hl
+	inc	hl		; Advance to where next jump instr (0c3h) is
+	ld	a,(hl)
+	cp	0c3h		; Is it really a jmp instruction?
+	ret	nz		; We're done if it isn't
+	push	hl
+	ld	hl,19		; Advance DE by 19 to do next line
+	add	hl,de
+	ex	de,hl
+	pop	hl
+	jp	next
+;
+; other addresses or memory contents
+;
+misc$locns:
+;
+; device table address
+;
+	ld	hl,(0001h)
+	ld	de,3*19		; Offset to devtbl jump
+	add	hl,de		; HL points to devtbl jump in bios jmp table
+	inc	hl
+	call	into$hl		; Get what HL points to into HL
+	ld	a,(hl)
+	cp	21h		; First instruction should be an LXI H,addr
+	jp	nz,next2
+	inc	hl		; +1 to address of device table (@ctbl)
+	call	into$hl		; Get what HL points to into HL
+	ld	de,chrtbl+13	; Storage
+	call	hlout		; As 4 ascii digits
+next2:
+;
+; drive table address
+;
+	ld	hl,(0001h)
+	ld	de,3*21		; Offset to drvtbl jump
+	add	hl,de
+	inc	hl
+	call	into$hl
+	ld	a,(hl)
+	cp	21h		; First instruction should be an LXI H,addr
+	jp	nz,next3
+	inc	hl
+	call	into$hl		; Get what HL points to into HL
+	ld	de,drtbl+13	; Storage
+	call	hlout
+next3:
+;
+; address of location where selmem stores/accesses current_bank_byte
+;
+	ld	hl,(0001h)
+	ld	de,3*26		; Offset to selmem jump
+	add	hl,de
+	inc	hl
+	call	into$hl
+	ld	a,(hl)
+	cp	32h		; First instruction should be an STA addr
+	jp	nz,next4
+;
+	inc	hl
+	call	into$hl
+	ld	de,curbnk+13	; Storage of current_bank_byte
+	call	hlout		; As 4 ascii digits
+	ret
+next4:
+;
+; If you want to add more routines to the train, put them here.
+;
+	ret
+;
+;--------
+;
+into$hl:			; Get what HL points to into HL
+	ld	e,(hl)		; Transfer lo bit  of address into D
+	inc	hl		; And hi bit into E
+	ld	d,(hl)
+	ex	de,hl
+	ret
+;--------
+;
+; Selected SCB contents
+;
+scb$locns:
+	ld	a,22h		; SCB+22h, CONIN redirection flags
+	ld	(scbpb),a
+	call	scbget
+	ld	de,cinrx+13	; Store here after conversion to ascii
+	call	hlout		; Convert to ascii
+;
+	ld	a,24h		; SCB+24h, CONOUT redirection flags
+	ld	(scbpb),a
+	call	scbget
+	ld	de,coutrx+13
+	call	hlout
+;
+	ld	a,26h		; SCB+26h, AUXIN redirection flags
+	ld	(scbpb),a
+	call	scbget
+	ld	de,ainrx+13
+	call	hlout
+;
+	ld	a,28h		; SCB+28h, AUXOUT redirection flags
+	ld	(scbpb),a
+	call	scbget
+	ld	de,aoutrx+13
+	call	hlout
+;
+	ld	a,2ah		; SCB+2ah, LSTOUT redirection flags
+	ld	(scbpb),a
+	call	scbget
+	ld	de,loutrx+13
+	call	hlout
+;
+	ld	a,3ah		; SCB+3ah, for SCB base address
+	ld	(scbpb),a
+	call	scbget
+	ld	de,scbbase+13
+	ld	(scb$addr),hl
+	call	hlout
+;
+	ld	a,58h		; SCB+58h, for 16-bit word, days since 1-jan-78
+	ld	(scbpb),a
+	call	scbget
+	ld	de,days+13	; Put address here after translation
+	call	hlout
+;
+	ld	a,5ah		; SCB+5ah, for bcd hour at SCB+5ah
+	ld	(scbpb),a
+	call	scbget
+	ld	de,hr+15	; Offset from label by 15 vs. 13 (byte vs. word)
+	call	hexout
+;
+	ld	a,5bh		; ...bcd minute
+	ld	(scbpb),a
+	call	scbget
+	ld	de,min+15
+	call	hexout
+;
+	ld	a,5ch		; ...bcd second
+	ld	(scbpb),a
+	call	scbget
+	ld	de,sec+15
+	call	hexout
+;
+	ld	a,5dh		; ...common memory address
+	ld	(scbpb),a
+	call	scbget
+	ld	de,commem+13
+	call	hlout
+;
+	ld	a,62h		; ...top of user TPA
+	ld	(scbpb),a
+	call	scbget
+	ld	de,toptpa+13
+	call	hlout
+;
+	ret
+;----------
+;
+scbget:	ld	c,49		; Get SCB values
+	ld	de,scbpb
+	call	bdos
+	ret
+;
+scbpb:	defb	0		; Offset within SCB
+	defb	0,0,0,0
+	defw	0
+;--------
+;
+xbios:	ld	c,50		; Direct bios call
+	ld	de,biospb
+	call	bdos
+	ret
+;
+; parameter block for CP/M 3 direct bios calls
+;
+biospb:	defb	0		; Bios function
+areg:	defb	0		; Input reg values
+bcreg:	defw	0
+dereg:	defw	0
+hlreg:	defw	0
+;--------
+;
+; dumps
+;
+dumps:
+;
+; DPH's and DPB's of all valid drives
+;
+	ld	de,dphdpb	; Print title
+	call	print
+;
+; DPH first
+;
+drives:	ld	h,16		; 16 drives, A: thru P: = 0 through 15
+	ld	l,0		; First drive to test for
+	ld	(bcreg),hl
+drvs:	ld	hl,(bcreg)
+	ld	a,l
+	cp	h
+	jp	z,fin		; Done all?
+	ld	a,l		; No
+	add	a,41h		; Convert drive number to ascii
+	ld	(drvdph+1),a	; Store in heading texts
+	ld	(drvdpb+1),a
+	ld	a,seldsk	; Make direct bios call to seldsk
+	ld	(biospb),a	; Store bios function number in biosp
+	call	xbios		; Do the call. HL either is DPH, or 0 if no drv
+	ld	(dph$addr),hl
+	push	hl
+	ld	hl,(bcreg)	; Get ready for next drive
+	inc	hl
+	ld	(bcreg),hl
+	pop	hl
+	xor	a		; Is returned HL zero?
+	cp	h
+	jp	nz,exists	; HL non-zero, so dph address is in HL
+	cp	l
+	jp	z,drvs		; If returns HL=0, no such drive
+exists:	call	crlf
+	ld	de,drvdph
+	call	print
+	ld	de,25		; Dump 25 bytes
+	ld	b,25		; Bytes/line of dump
+	call	dump
+;
+; get DPB and dump it for same drive.
+;
+; I had one problem with this: for a ram disk residing in another bank,
+; when I dumped, everything went haywire when I dumped the DBP.  I found
+; things went normally if I transferred (used Z80 LDIR) the DPB to a buffer
+; and dumped from that location instead.  If you add more dumps and get
+; funny results, try the buffer trick.
+;
+	ld	de,drvdpb	; Title of dump
+	call	print
+	ld	hl,(dph$addr)
+	ld	de,12		; Locate DPB address in DPH
+	add	hl,de
+	call	into$hl		; Put it into HL
+	call	buf$dump
+;
+	jp	drvs		; Do dph and dpb thing for next drive
+fin:				; End up here when no more drives to check
+;
+; dump system control block
+;
+	call	crlf
+	ld	de,scb$dump
+	call	print
+	ld	hl,(scb$addr)
+	ld	de,100		; Dump 100 bytes
+	ld	b,16		; Bytes/line of dump
+	call	dump
+	call	crlf
+;
+	ret
+;
+dph$addr:
+	defw	0
+scb$addr:
+	defw	0
+real$addr:
+	defw	0		; For buffered dumps, the real location we're dumping
+;--------
+;
+; convert 2-byte hex contents of HL to 4 ascii digits.  Store
+; the ascii output at address pointed to by DE if storage$flag contents
+; are 0, or output to console if storage$flag is non-zero.
+;
+hlout:	push	hl		; Save regs
+	push	de
+	push	bc
+	push	af
+	ld	a,h		; Do H (hi bit) first
+	call	hexout		; Hex to ascii for contents of a, then output
+	ld	a,l		; Now do L
+	call	hexout
+	pop	af		; Restore regs
+	pop	bc
+	pop	de
+	pop	hl
+	ret
+;
+; hex to ascii for contents of A
+;
+hexout:	push	af		; Save it
+	rrca			; Hi nybble into lo
+	rrca
+	rrca
+	rrca
+	call	nybble		; Print it
+	pop	af		; Restore, fall into lo
+nybble:	and	0fh		; Zap any garbage in hi nybble
+	add	a,90h		; Hex to ascii, from old Intel library  
+	daa
+	adc	a,40h
+	daa
+	call	store
+	call	type
+	ret
+;
+store:	push	af		; Store in memory location
+	ld	a,(storage$flag)
+	cp	0
+	jp	nz,nostg	; If non-zero, don't store it
+	pop	af
+	ld	(de),a		; If zero, store at address in de
+	inc	de		; Advance to next storage address
+	ret
+nostg:	pop	af
+	ret
+;
+type:	push	af		; Output char in A to console
+	ld	a,(storage$flag)
+	cp	0
+	jp	z,notype	; If zero, don't output it
+	pop	af
+	call	prchar
+	ret
+notype:	pop	af
+	ret
+;--------
+;
+;dump: routine:
+; dumps memory starting at address in HL.  Dumps number of bytes in DE.
+; Maximum bytes per line set by what is in B.  Starts each line with
+; address of first byte in the line.
+;
+;buf$dump routine:
+; transfers from original location to a buffer, dumps from that buffer,
+; but addresses printed in the dumped memory are for the original location.
+; I needed to do this for dumps where things went haywire when I tried
+; a simple dump in the normal way.  (Computers work the way they work, not
+; how you think they work.).  Buf$dump uses bdump$flag contents to
+; control that the real (original, that is) location is printed on each
+; new line of the dump.
+;
+; Note: The buffer for buf$dump is only 17 bytes.  Change it if you will
+; be adding something to be dumped that way that is longer.
+; 
+buf$dump:
+	ld	(real$addr),hl
+	ld	a,0ffh		; Set bdump$flag for buffered dump
+	ld	(bdump$flag),a
+	ld	bc,17
+	ld	d,b
+	ld	e,c		; The number of bytes to dump (17) into DE
+	push	de
+	ld	de,buffer
+	ldir
+	pop	de
+	ld	hl,buffer	; Where what we're dumping is now
+	ld	b,17		; Bytes/line of dump
+;
+; fall into dump:
+;
+dump:	push	bc
+	push	hl
+	dec	de
+	add	hl,de
+	ex	de,hl		; Calculated last byte address (in DE)
+	pop	hl
+	ld	a,0ffh
+	ld	(storage$flag),a ; Set so outputs to console, not stores in ram
+	call	address		; Print start address
+dump2:	ld	a,(hl)		; First/next byte
+	call	prt		; To console
+	ld	a,d		; Are we done?
+	cp	h
+	jp	nz,cont		; Msb's different, so continue
+	ld	a,e
+	cp	l
+	jp	z,done		; Msb's and lsb's the same so we're done
+	inc	hl		; Not done, address of next byte
+	push	hl
+	ld	hl,(real$addr)	; Advance count for stored reference address, 
+	inc	hl		; So dumps from buffer can reference the
+	ld	(real$addr),hl	; Real location, not that of the buffer
+	pop	hl
+	dec	b		; Are we at end of line?
+	xor	a
+	cp	b
+	jp	nz,cont		; No
+	pop	bc		; Yes, reset B counter
+	push	bc
+	call	address		; Start next line with address of first byte
+cont:	jp	dump2		; Keep going
+done:	ld	a,0		; Restore flag to ram storage mode of ascii
+	ld	(storage$flag),a
+	call	crlf
+	pop	bc
+	xor	a		; Reset bdump$flag for ordinary dump
+	ld	(bdump$flag),a
+	ret
+;
+prt:	push	af
+	ld	a,' '		; First do space as separator
+	call	prchar
+	pop	af
+	call	hexout		; Then output byte in A as two ascii chars
+	ret
+;
+address:			; Output address of start of dump & each line
+	push	hl
+	ld	a,(bdump$flag)
+	cp	0		; 0 for ordinary dump, 0ffh for buffered dump
+	jp	z,addr2
+	ld	hl,(real$addr)
+addr2:	call	crlf
+	call	hlout
+;	ld	a,':'
+;	call	prchar
+	pop	hl
+	ret
+;--------
+;
+prchar:	push	hl		; Output what's in A to console
+	push	de
+	push	bc
+	ld	e,a
+	ld	c,$conout
+	call	bdos
+	pop	bc
+	pop	de
+	pop	hl
+	ret
+;
+crlf:	ld	a,cr		; Send cr and lf
+	call	prchar
+	ld	a,lf
+	call	prchar
+	ret
+;
+print:	push	hl		; Print string pointed to by de
+	push	bc
+	ld	c,$print
+	call	bdos
+	pop	bc
+	pop	hl
+	ret
+;--------
+;
+text:	defb	'            Misc. addresses',cr,lf
+biosbase:
+	defb	'BIOS Base          = cboot jmp = bios jmp table address',cr,lf
+commem:	defb	'COMMON Base        ',cr,lf
+toptpa:	defb	'@MXTPA             = top of TPA = bdos_base',cr,lf
+chrtbl:	defb	'@CTBL        XXXX  = device table, if implemented',cr,lf
+drtbl:	defb	'@DTBL              = drive tbl (FFFF->none, hashing '
+	defb	'supported)',cr,lf
+	defb	'                               (FFFE->none, no hashing)',cr,lf
+curbnk:	defb	'@CBNK              = storage of current_memory_bank',cr,lf
+scbbase:defb	'SCB_BASE+0H        = at SCB_BASE+3AH, address of System '
+	defb	'Control Block',cr,lf,cr,lf
+	defb	'            Selected Register contents',cr,lf
+	defb	'I/O Redirection Flags (16-bit words):',cr,lf
+cinrx:	defb	'  for CONIN        at SCB_BASE+22H',cr,lf
+coutrx:	defb	'  for CONOUT       at SCB_BASE+24H',cr,lf
+ainrx:	defb	'  for AUXIN        at SCB_BASE+26H',cr,lf
+aoutrx:	defb	'  for AUXOUT       at SCB_BASE+28H',cr,lf
+loutrx:	defb	'  for LSTOUT       at SCB_BASE+2AH',cr,lf,cr,lf
+days:	defb	'@DATE              at SCB_BASE+58H, 16-bit integer, '
+	defb	'days since 01-Jan-78',cr,lf
+hr:	defb	'@HOUR              at SCB_BASE+5AH, BCD hours',cr,lf
+min:	defb	'@MIN               at SCB_BASE+5BH, BCD minutes',cr,lf
+sec:	defb	'@SECOND            at SCB_BASE+5CH, BCD seconds',cr,lf,cr,lf
+	defb	'           CP/M-Plus BIOS addresses',cr,lf
+	defb	'Jump Table Entries and Subroutines',cr,lf
+	defb	'            Jump   Sub-   ',cr,lf
+	defb	'             Table  routine',cr,lf
+	defb	'            ------ --------',cr,lf
+cboot:	defb	' 0 CBOOT                 ',cr,lf
+	defb	' 1 WBOOT                 ',cr,lf
+	defb	' 2 CONST                 ',cr,lf
+	defb	' 3 CONIN                 ',cr,lf
+	defb	' 4 CONOUT                ',cr,lf
+	defb	' 5 LIST                  ',cr,lf
+	defb	' 6 AUXOUT                ',cr,lf
+	defb	' 7 AUXIN                 ',cr,lf
+	defb	' 8 HOME                  ',cr,lf
+	defb	' 9 SELDSK                ',cr,lf
+	defb	'10 SETTRK                ',cr,lf
+	defb	'11 SETSEC                ',cr,lf
+	defb	'12 SETDMA                ',cr,lf
+	defb	'13 READ                  ',cr,lf
+	defb	'14 WRITE                 ',cr,lf
+	defb	'15 LISTST                ',cr,lf
+	defb	'16 SECTRN                ',cr,lf
+	defb	'17 CONOST                ',cr,lf
+	defb	'18 AUXIST                ',cr,lf
+	defb	'19 AUXOST                ',cr,lf
+	defb	'20 DEVTBL                ',cr,lf
+	defb	'21 DEVINI                ',cr,lf
+	defb	'22 DRVTBL                ',cr,lf
+	defb	'23 MULTIO                ',cr,lf
+	defb	'24 FLUSH                 ',cr,lf
+	defb	'25 MOVE                  ',cr,lf
+	defb	'26 TIME                  ',cr,lf
+	defb	'27 SELMEM                ',cr,lf
+	defb	'28 SETBNK                ',cr,lf
+	defb	'29 XMOVE                 ',cr,lf
+	defb	'30 USERF                 ',cr,lf
+	defb	'31 RESERV1               ',cr,lf
+	defb	'32 RESERV2               ',cr,lf
+;
+	 if	alscard
+	defb	'33 APREAD                ',cr,lf
+	defb	'34 APWRITE               ',cr,lf
+	defb	'35 CAPPLE    XXXX    XXXX',cr,lf ; XXXX if not supported
+	 endif
+;              
+	defb	'             $           ',cr,lf ; Extras if needed
+	defb	'             $           ',cr,lf
+	defb	'             $           ',cr,lf
+	defb	'             $           ',cr,lf
+	defb	'             $           ',cr,lf
+	defb	'             $           ',cr,lf
+	defb	'             $           ',cr,lf,'$'
+;
+dphdpb:	defb	cr,lf,'        DPH''s and DPB''s for valid drives','$'
+drvdph:	defb	'  : drive -- Disk Parameter Header',cr,lf
+	defb	'     -xlt- ------72 bit scratch------ mf -dfb- -csv- -alv- -dir- -dta- -hsh- hb','$'
+drvdpb:	defb	'  : drive -- Disk Parameter Block',cr,lf
+	defb	'     -spt- bs bm em -dsm- -drm- a0 a1 -cks- -off- ps pm','$'
+scb$dump:
+	defb	' System Control Block','$'
+;
+storage$flag:
+	defb	0
+bdump$flag:
+	defb	0
+buffer:	defs	17
+objend:	defw	$
+;
+	end
+                

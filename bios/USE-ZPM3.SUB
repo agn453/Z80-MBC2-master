@@ -1,0 +1,4 @@
+; Select the ZPM3 Banked BDOS modules (Simeon Cran's Z80 CP/M3 replacement)
+PIP BNKBDOS3.SPR[V]=BNKBDOS3.SPZ
+PIP RESBDOS3.SPR[V]=RESBDOS3.SPZ
+

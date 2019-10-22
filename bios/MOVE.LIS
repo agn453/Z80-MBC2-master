@@ -1,0 +1,170 @@
+ZSM 4.1	Source file: MOVE     	22-Oct-2019  09:58:37	Page    1
+bank & move module for CP/M3 linked BIOS
+
+                                	.z80
+                                ;
+                                ;	Converted to Z80 mnemonics via XIZ by Tony Nicholson
+                                ;	and added XMOVE capability (to allow programs like
+                                ;	BOOTSYS to load a replacement system image under a
+                                ;	running banked system into the correct memory banks).
+                                ;
+                                ;	Assemble using Microsoft M80 or Hector Peraza's ZSM4
+                                ;
+                                ;******************************************************************************
+                                ;
+                                ; MOVE.ASM - S290918
+                                ; CP/M 3.0 BANK & MOVE BIOS MODULE FOR THE Z80-MBC2 (HW ref. A040618)
+                                ;
+                                ; Required IOS S220718-R190918 (or newer revisions until otherwise stated)
+                                ;
+                                ;
+                                ;******************************************************************************
+                                	
+                                				; DEFINE LOGICAL VALUES
+  FFFF  =                       true	equ	-1
+  0000  =                       false	equ	not true
+                                
+                                				; DETERMINE IF FOR BANK SELECT OR NOT
+  FFFF  =                       banked	equ	true		; <------ BANKED/NON-BANKED SWITCH
+                                
+                                				; LOCATE CODE IN THE COMMON SEGMENT:
+                                				; --------------------------
+                                	cseg
+                                				; --------------------------
+                                
+                                				; DEFINE PUBLIC LABELS
+                                	public ?move,?xmove,?bank
+                                	
+                                				; EXTERNALLY DEFINED ENTRY POINTS AND LABELS
+                                	extrn @cbnk
+                                
+                                  if banked
+                                	extrn ?bnksl
+                                  endif
+                                
+                                ; -----------------------------------------------------------------------------
+                                ;
+                                ; Z80-MBC2 IOS equates
+                                ;
+                                ; -----------------------------------------------------------------------------
+                                
+  0000  =                       exc$wr$opcd equ	000h		; Address of the EXECUTE WRITE OPCODE write port
+  0000  =                       exc$rd$opcd equ	000h		; Address of the EXECUTE READ OPCODE read port
+  0001  =                       sto$opcd equ	001h		; Address of the STORE OPCODE write port
+  0001  =                       serial$rx equ	001h		; Address of the SERIAL RX read port
+  0001  =                       sertx$opc equ	001h		; SERIAL TX opcode
+  0009  =                       seldisk$opc equ	009h		; SELDISK opcode
+  000A  =                       seltrck$opc equ	00ah		; SELTRACK opcode
+  000B  =                       selsect$opc equ	00bh		; SELSECT opcode
+  000C  =                       wrtsect$opc equ	00ch		; WRITESECT opcode
+  000D  =                       setbank$opc equ	00dh		; SETBANK opcode
+ZSM 4.1	Source file: MOVE     	22-Oct-2019  09:58:37	Page    2
+bank & move module for CP/M3 linked BIOS
+
+  0083  =                       sysflag$opc equ	083h		; SYSFLAG opcode
+  0084  =                       datetim$opc equ	084h		; DATETIME opcode
+  0085  =                       errdsk$opc equ	085h		; ERRDISK opcode
+  0086  =                       rdsect$opc equ	086h		; READSECT opcode
+  0087  =                       sdmount$opc equ	087h		; SDMOUNT opcode
+                                
+                                
+                                				; ROUTINE SETS UP AN INTER-BANK MOVE OF 128 BYTES ON THE NEXT CALL
+                                				;  TO ?MOVE
+  0000'                         ?xmove:
+                                  if banked
+  0000' 3E FF                   	ld	a,0FFh		; Set extended move flag
+  0002' 32 000A'                	ld	(xmov$flag),a
+  0005' ED 43 000B'             	ld	(xmov$src),bc	; Save destination (B) and source (C) banks
+  0009' C9                      	ret
+                                
+  000A' 00                      xmov$flag: defb	0		; Non-zero for extended move
+  000B' 00                      xmov$src: defb	0		; Source bank
+  000C' 00                      xmov$dst: defb	0		; Destination
+  000D' ( 0080 )                xmov$buf: defs	128		; 128 byte bounce buffer
+                                  else
+                                	ret
+                                  endif
+                                
+                                	
+                                				; ROUTINE PERFORMS INTRA-BANK MOVES IF ?XMOVE WAS NOT CALLED PRIOR TO
+                                				;  THIS CALL TO ?MOVE ELSE A 128 BYTE TRANSFER IS CONDUCTED BETWEEN
+                                				;  DIFFERENT BANKS
+  008D'                         ?move:
+                                  if banked
+  008D' 3A 000A'                	ld	a,(xmov$flag)	; is this an extended memory move?
+  0090' B7                      	or	a
+  0091' 28 37                   	jr	z,mover		; no
+  0093' AF                      	xor	a		; yes, reset flag
+  0094' 32 000A'                	ld	(xmov$flag),a
+  0097' ED 73 00F0'             	ld	(cmnstk),sp	; Swap to stack in common memory
+  009B' 31 00F0'                	ld	sp,cmnstk
+  009E' 3A 0000#                	ld	a,(@cbnk)	; Get and save current bank
+  00A1' F5                      	push	af
+  00A2' EB                      	ex	de,hl		; Swap registers for Z80 block move
+  00A3' E5                      	push	hl		; Save source pointer
+  00A4' D5                      	push	de		;  destination pointer
+  00A5' C5                      	push	bc		;  and byte count
+  00A6' 11 000D'                	ld	de,xmov$buf	; Point to common memory buffer
+  00A9' 3A 000B'                	ld	a,(xmov$src)	; Select source bank
+  00AC' CD 0000#                	call	?bnksl
+  00AF' ED B0                   	ldir			; Copy to common memory
+  00B1' C1                      	pop	bc
+  00B2' D1                      	pop	de
+  00B3' E3                      	ex	(sp),hl
+  00B4' 21 000D'                	ld	hl,xmov$buf
+  00B7' 3A 000C'                	ld	a,(xmov$dst)
+  00BA' CD 0000#                	call	?bnksl
+  00BD' ED B0                   	ldir			; Copy to destination
+  00BF' E1                      	pop	hl
+  00C0' EB                      	ex	de,hl
+  00C1' F1                      	pop	af
+ZSM 4.1	Source file: MOVE     	22-Oct-2019  09:58:37	Page    3
+bank & move module for CP/M3 linked BIOS
+
+  00C2' CD 0000#                	call	?bnksl		; Restore saved bank
+  00C5' ED 7B 00F0'             	ld	sp,(cmnstk)	;  and stack pointer
+  00C9' C9                      	ret			; Return
+  00CA'                         mover:
+                                  endif
+  00CA' EB                      	ex	de,hl		; we are passed source in DE and dest in HL
+  00CB' ED B0                   	ldir			; use Z80 block move instruction
+  00CD' EB                      	ex	de,hl		; need next addresses in same regs
+  00CE' C9                      	ret
+                                
+                                	
+                                				; ROUTINE SWITCHES IN PHYSICAL BANK.
+                                				; ?BANK is called with the bank address in register A. This bank address ha
+                                				; stored in @CBNK for future reference. All registers except A must be main
+  00CF'                         ?bank:
+                                	 if	banked
+  00CF' F5                      	push	af		; Save requested bank
+  00D0' 3E 0D                   	ld	a, setbank$opc	; Select the SETBANK opcode
+  00D2' D3 01                   	out	(sto$opcd),a
+  00D4' F1                      	pop	af		; A = bank number [0..2]
+  00D5' D3 00                   	out	(exc$wr$opcd),a	; Select it
+                                	 endif
+  00D7' C9                      	ret
+                                
+                                  if banked
+                                	cseg
+  00D8' ( 0018 )                	defs	24		; 12-level stack in common
+  00F0' ( 0002 )                cmnstk:	defs	2
+                                  endif
+                                
+  0000  =                       	end
+
+Errors: 0
+ZSM 4.1	Source file: MOVE     	22-Oct-2019  09:58:37	Page    4
+
+Symbols:
+?BANK ............ 00CF'P ?BNKSL ........... 0000#  ?MOVE ............ 008D'P
+?XMOVE ........... 0000'P @CBNK ............ 0000#  BANKED ........... FFFF 
+CMNSTK ........... 00F0'  DATETIM$OPC ...... 0084   ERRDSK$OPC ....... 0085 
+EXC$RD$OPCD ...... 0000   EXC$WR$OPCD ...... 0000   FALSE ............ 0000 
+MOVER ............ 00CA'  RDSECT$OPC ....... 0086   SDMOUNT$OPC ...... 0087 
+SELDISK$OPC ...... 0009   SELSECT$OPC ...... 000B   SELTRCK$OPC ...... 000A 
+SERIAL$RX ........ 0001   SERTX$OPC ........ 0001   SETBANK$OPC ...... 000D 
+STO$OPCD ......... 0001   SYSFLAG$OPC ...... 0083   TRUE ............. FFFF 
+WRTSECT$OPC ...... 000C   XMOV$BUF ......... 000D'  XMOV$DST ......... 000C'
+XMOV$FLAG ........ 000A'  XMOV$SRC ......... 000B'  
+

@@ -1,0 +1,4 @@
+; Select the DRI versions of the Banked BDOS (CP/M-Plus with Y2K patches)
+PIP BNKBDOS3.SPR[V]=BNKBDOS3.SPD
+PIP RESBDOS3.SPR[V]=RESBDOS3.SPD
+

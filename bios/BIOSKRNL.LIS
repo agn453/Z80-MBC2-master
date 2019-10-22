@@ -1,0 +1,974 @@
+ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    1
+Root module of relocatable BIOS for CP/M 3.0
+
+                                	.z80
+                                ;
+                                ;	Converted to Z80 mnemonics via XIZ by Tony Nicholson
+                                ;	with some byte-saving optimizations (relative jumps
+                                ;	replacing absolute ones).
+                                ;
+                                ;	Assemble using Microsoft M80 or Hector Peraza's ZSM4
+                                ;
+                                ;******************************************************************************
+                                ;
+                                ; BIOSKRNL.ASM - S170319
+                                ; CP/M 3.0 ROOT BIOS MODULE FOR THE Z80-MBC2 (HW ref. A040618)
+                                ;
+                                ; Required IOS S220718-R260119 (or following revisions until otherwise stated)
+                                ;
+                                ; (Search the string 'Z80-MBC2' for changes)
+                                ;
+                                ; CHANGELOG:
+                                ;
+                                ; S170319           First release
+                                ;
+                                ;
+                                ;******************************************************************************
+                                
+                                				; version 1.0 15 Sept 82
+                                
+  FFFF  =                       true	equ	-1
+  0000  =                       false	equ	not true
+                                
+  FFFF  =                       banked	equ	true		; <------ BANKED Version
+                                	
+                                
+                                ;		  Copyright (C), 1982
+                                ;		 Digital Research, Inc
+                                ;		     P.O. Box 579
+                                ;		Pacific Grove, CA  93950
+                                
+                                
+                                ;   This is the invariant portion of the modular BIOS and is
+                                ;	distributed as source for informational purposes only.
+                                ;	All desired modifications should be performed by
+                                ;	adding or changing externally defined modules.
+                                ;	This allows producing "standard" I/O modules that
+                                ;	can be combined to support a particular system 
+                                ;	configuration.
+                                
+  000D  =                       cr	equ	13
+  000A  =                       lf	equ	10
+  0007  =                       bell	equ	7
+  0011  =                       ctlq	equ	'Q'-'@'
+  0013  =                       ctls	equ	'S'-'@'
+                                
+  0100  =                       ccp	equ	0100h		; Console Command Processor gets loaded into the TPA
+                                
+                                	cseg			; GENCPM puts CSEG stuff in common memory
+                                
+                                
+ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    2
+Root module of relocatable BIOS for CP/M 3.0
+
+                                				; variables in system data page
+                                
+                                	extrn @covec,@civec,@aovec,@aivec,@lovec ; I/O redirection vectors
+                                	extrn @mxtpa		; addr of system entry point
+                                	extrn @bnkbf		; 128 byte scratch buffer
+                                
+                                				; initialization
+                                
+                                	extrn ?init		; general initialization and signon
+                                	extrn ?ldccp,?rlccp	; load & reload CCP for BOOT & WBOOT
+                                
+                                				; user defined character I/O routines
+                                
+                                	extrn ?ci,?co,?cist,?cost ; each take device in <B>
+                                	extrn ?cinit		; (re)initialize device in <C>
+                                	extrn @ctbl		; physical character device table
+                                	
+                                				; ---------------------------------------------------------------
+                                	extrn ?cnstflg		; CONST mode flag (Z80-MBC2)
+                                				; ---------------------------------------------------------------
+                                
+                                				; disk communication data items
+                                
+                                	extrn @dtbl		; table of pointers to XDPHs
+                                	public @adrv,@rdrv,@trk,@sect ; parameters for disk I/O
+                                	public @dma,@dbnk,@cnt	;    ''       ''   ''  ''
+                                
+                                				; memory control
+                                
+                                	public @cbnk		; current bank
+                                	extrn ?xmove,?move	; select move bank, and block move
+                                	extrn ?bank		; select CPU bank
+                                
+                                				; clock support
+                                
+                                	extrn ?time		; signal time operation
+                                
+                                				; general utility routines
+                                
+                                	public ?pmsg,?pdec	; print message, print number from 0 to 65535
+                                	public ?pderr		; print BIOS disk error message header
+                                
+                             C  	include modebaud.lib	; define character I/O mode bits
+                             C  	; equates for mode byte bit fields
+                             C  
+  0001  =                    C  mb$input		equ 00000001b	; device may do input
+  0002  =                    C  mb$output		equ 00000010b	; device may do output
+  0003  =                    C  mb$in$out		equ mb$input+mb$output
+                             C  
+  0004  =                    C  mb$soft$baud		equ 00000100b	; software selectable
+                             C  					; baud rates
+                             C  
+  0008  =                    C  mb$serial		equ 00001000b	; device may use protocol
+  0010  =                    C  mb$xon$xoff		equ 00010000b	; XON/XOFF protocol
+                             C  					; enabled
+                             C  
+  0000  =                    C  baud$none		equ 0		; no baud rate associated
+ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    3
+Root module of relocatable BIOS for CP/M 3.0
+
+                             C  					; with this device
+  0001  =                    C  baud$50			equ 1		; 50 baud
+  0002  =                    C  baud$75			equ 2		; 75 baud
+  0003  =                    C  baud$110		equ 3		; 110 baud
+  0004  =                    C  baud$134		equ 4		; 134.5 baud
+  0005  =                    C  baud$150		equ 5		; 150 baud
+  0006  =                    C  baud$300		equ 6		; 300 baud
+  0007  =                    C  baud$600		equ 7		; 600 baud
+  0008  =                    C  baud$1200		equ 8		; 1200 baud
+  0009  =                    C  baud$1800		equ 9		; 1800 baud
+  000A  =                    C  baud$2400		equ 10		; 2400 baud
+  000B  =                    C  baud$3600		equ 11		; 3600 baud
+  000C  =                    C  baud$4800		equ 12		; 4800 baud
+  000D  =                    C  baud$7200		equ 13		; 7200 baud
+  000E  =                    C  baud$9600		equ 14		; 9600 baud
+  000F  =                    C  baud$19200		equ 15		; 19.2k baud
+                                
+                                
+                                				; External names for BIOS entry points
+                                
+                                	public ?boot,?wboot,?const,?conin,?cono,?list,?auxo,?auxi
+                                	public ?home,?sldsk,?sttrk,?stsec,?stdma,?read,?write
+                                	public ?lists,?sctrn
+                                	public ?conos,?auxis,?auxos,?dvtbl,?devin,?drtbl
+                                	public ?mltio,?flush,?mov,?tim,?bnksl,?stbnk,?xmov
+                                
+                                
+                                				; BIOS Jump vector.
+                                
+                                				; All BIOS routines are invoked by calling these
+                                				; 	entry points.
+                                
+  0000' C3 0000"                ?boot:	jp	boot		; initial entry on cold start
+  0003' C3 0074'                ?wboot:	jp	wboot		; reentry on program exit, warm start
+                                
+  0006' C3 017D'                ?const:	jp	const		; return console input status
+  0009' C3 0196'                ?conin:	jp	conin		; return console input character
+  000C' C3 00E8'                ?cono:	jp	conout		; send console output character
+  000F' C3 00F2'                ?list:	jp	list		; send list output character
+  0012' C3 00ED'                ?auxo:	jp	auxout		; send auxilliary output character
+  0015' C3 019B'                ?auxi:	jp	auxin		; return auxilliary input character
+                                
+  0018' C3 006B"                ?home:	jp	home		; set disks to logical home
+  001B' C3 003D"                ?sldsk:	jp	seldsk		; select disk drive, return disk parameter info
+  001E' C3 006E"                ?sttrk:	jp	settrk		; set disk track
+  0021' C3 0073"                ?stsec:	jp	setsec		; set disk sector
+  0024' C3 0078"                ?stdma:	jp	setdma		; set disk I/O memory address
+  0027' C3 008E"                ?read:	jp	read		; read physical block(s)
+  002A' C3 00A3"                ?write:	jp	write		; write physical block(s)
+                                
+  002D' C3 011B'                ?lists:	jp	listst		; return list device status
+  0030' C3 0083"                ?sctrn:	jp	sectrn		; translate logical to physical sector
+                                
+  0033' C3 0111'                ?conos:	jp	conost		; return console output status
+  0036' C3 0182'                ?auxis:	jp	auxist		; return aux input status
+  0039' C3 0116'                ?auxos:	jp	auxost		; return aux output status
+  003C' C3 00E0'                ?dvtbl:	jp	devtbl		; return address of device def table
+ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    4
+Root module of relocatable BIOS for CP/M 3.0
+
+  003F' C3 0000#                ?devin:	jp	?cinit		; change baud rate of device
+                                
+  0042' C3 00E4'                ?drtbl:	jp	getdrv		; return address of disk drive table
+  0045' C3 00C4"                ?mltio:	jp	multio		; set multiple record count for disk I/O
+  0048' C3 00C8"                ?flush:	jp	flush		; flush BIOS maintained disk caching
+                                
+  004B' C3 0000#                ?mov:	jp	?move		; block move memory to memory
+  004E' C3 0000#                ?tim:	jp	?time		; Signal Time and Date operation
+  0051' C3 021F'                ?bnksl:	jp	bnksel		; select bank for code execution and default DMA
+  0054' C3 007F"                ?stbnk:	jp	setbnk		; select different bank for disk I/O DMA operations.
+  0057' C3 0000#                ?xmov:	jp	?xmove		; set source and destination banks for one operation
+                                
+                                ; -----------------------------------------------------------------------------
+  005A' C3 0063'                cnstmd:	jp	cnstmde		; set 8 bit CONST mode (non standard jmp. Z80-MBC2)
+                                ; -----------------------------------------------------------------------------
+                                
+  005D' C3 0000                 	jp	0		; reserved for future expansion
+  0060' C3 0000                 	jp	0		; reserved for future expansion
+                                	
+                                	
+                                				; -------------------------------------------------------------
+                                				; CONST MODE  (Z80-MBC2)
+                                				; 	Set the Console Input Status mode to 8 bit
+                                				;       This is a non standard function only for the Z80-MBC2
+                                				; -------------------------------------------------------------
+                                
+  0063'                         cnstmde:
+  0063' F5                      	push	af
+  0064' 3E 01                   	ld	a, 01h		; A = 1
+  0066' 32 0000#                	ld	(?cnstflg),a	; Set the CONST mode to 8 bit (Z80-MBC2)
+  0069' F1                      	pop	af
+  006A' C9                      	ret
+                                
+                                
+                                				; BOOT
+                                				; 	Initial entry point for system startup.
+                                
+                                	dseg			; this part can be banked
+                                
+  0000"                         boot:
+  0000" 31 00E0'                	ld	sp,boot$stack
+  0003" 0E 0F                   	ld	c,15		; initialize all 16 character devices
+  0005"                         c$init$loop:
+  0005" C5                      	push	bc
+  0006" CD 0000#                	call	?cinit
+  0009" C1                      	pop	bc
+  000A" 0D                      	dec	c
+  000B" F2 0005"                	jp	p,c$init$loop
+                                
+  000E" CD 0000#                	call	?init		; perform any additional system initialization
+                                				; and print signon message
+                                
+  0011" 01 1000                 	ld	bc,16*256+0
+  0014" 21 0000#                	ld	hl,@dtbl	; init all 16 logical disk drives
+  0017"                         d$init$loop:
+  0017" C5                      	push	bc		; save remaining count and abs drive
+  0018" 5E                      	ld	e,(hl)
+ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    5
+Root module of relocatable BIOS for CP/M 3.0
+
+  0019" 23                      	inc	hl
+  001A" 56                      	ld	d,(hl)
+  001B" 23                      	inc	hl		; grab @drv entry
+  001C" 7B                      	ld	a,e
+  001D" B2                      	or	d
+  001E" 28 15                   	jr	z,d$init$next	; if null, no drive
+  0020" E5                      	push	hl		; save @drv pointer 
+  0021" EB                      	ex	de,hl		; XDPH address in <HL>
+  0022" 2B                      	dec	hl
+  0023" 2B                      	dec	hl
+  0024" 7E                      	ld	a,(hl)
+  0025" 32 00E7"                	ld	(@rdrv),a	; get relative drive code
+  0028" 79                      	ld	a,c
+  0029" 32 00E6"                	ld	(@adrv),a	; get absolute drive code
+  002C" 2B                      	dec	hl		; point to init pointer
+  002D" 56                      	ld	d,(hl)
+  002E" 2B                      	dec	hl
+  002F" 5E                      	ld	e,(hl)		; get init pointer
+  0030" EB                      	ex	de,hl
+  0031" CD 01B6'                	call	ipchl		; call init routine
+  0034" E1                      	pop	hl		; recover @drv pointer
+  0035"                         d$init$next:
+  0035" C1                      	pop	bc		; recover counter and drive #
+  0036" 0C                      	inc	c
+  0037" 05                      	dec	b
+  0038" 20 DD                   	jr	nz,d$init$loop	; and loop for each drive
+  003A" C3 006B'                	jp	boot$1
+                                
+                                	cseg			; following in resident memory
+                                
+  006B'                         boot$1:
+  006B' CD 0086'                	call	set$jumps
+  006E' CD 0000#                	call	?ldccp		; fetch CCP for first time
+  0071' C3 0100                 	jp	ccp
+                                
+                                
+                                				; WBOOT
+                                				; 	Entry for system restarts.
+                                
+  0074'                         wboot:
+  0074' 31 00E0'                	ld	sp,boot$stack
+  0077' CD 0086'                	call	set$jumps	; initialize page zero
+                                	
+                                				; ---------------------------------------------------------
+                                				; Set the CONST mode to 7 bit (Z80-MBC2)
+                                				; ---------------------------------------------------------
+  007A' F5                      	push	af
+  007B' AF                      	xor	a		; A = 0
+  007C' 32 0000#                	ld	(?cnstflg),a	; Set the CONST mode flag to 7 bit (Z80-MBC2)
+  007F' F1                      	pop	af
+                                	
+  0080' CD 0000#                	call	?rlccp		; reload CCP
+  0083' C3 0100                 	jp	ccp		; then reset jmp vectors and exit to ccp
+                                
+                                
+  0086'                         set$jumps:
+                                
+ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    6
+Root module of relocatable BIOS for CP/M 3.0
+
+                                	 if	banked
+  0086' 3E 01                   	ld	a,1		; select TPA bank
+  0088' CD 0051'                	call	?bnksl
+                                	 endif
+                                
+  00C3  =                       jmp	equ	0c3h
+                                
+  008B' 3E C3                   	ld	a,jmp
+  008D' 32 0000                 	ld	(0),a
+  0090' 32 0005                 	ld	(5),a		; set up jumps in page zero
+  0093' 21 0003'                	ld	hl,?wboot
+  0096' 22 0001                 	ld	(1),hl		; BIOS warm start entry
+  0099' 2A 0000#                	ld	hl,(@mxtpa)
+  009C' 22 0006                 	ld	(6),hl		; BDOS system call entry
+  009F' C9                      	ret
+                                
+                                
+  00A0' ( 0040 )                	defs	64
+  00E0' =                       boot$stack equ	$
+                                
+                                
+                                				; DEVTBL
+                                				; 	Return address of character device table
+                                
+  00E0'                         devtbl:
+  00E0' 21 0000#                	ld	hl,@ctbl
+  00E3' C9                      	ret
+                                
+                                
+                                				; GETDRV
+                                				; 	Return address of drive table
+                                
+  00E4'                         getdrv:
+  00E4' 21 0000#                	ld	hl,@dtbl
+  00E7' C9                      	ret
+                                
+                                
+                                
+                                				; CONOUT
+                                				; 	Console Output.  Send character in <C>
+                                				; 			to all selected devices
+                                
+  00E8'                         conout:	
+                                
+  00E8' 2A 0000#                	ld	hl,(@covec)	; fetch console output bit vector
+  00EB' 18 08                   	jr	out$scan
+                                
+                                
+                                				; AUXOUT
+                                				; 	Auxiliary Output. Send character in <C>
+                                				; 			to all selected devices
+                                
+  00ED'                         auxout:
+  00ED' 2A 0000#                	ld	hl,(@aovec)	; fetch aux output bit vector
+  00F0' 18 03                   	jr	out$scan
+                                
+                                
+ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    7
+Root module of relocatable BIOS for CP/M 3.0
+
+                                				; LIST
+                                				; 	List Output.  Send character in <C>
+                                				; 			to all selected devices.
+                                
+  00F2'                         list:
+  00F2' 2A 0000#                	ld	hl,(@lovec)	; fetch list output bit vector
+                                
+  00F5'                         out$scan:
+  00F5' 06 00                   	ld	b,0		; start with device 0
+  00F7'                         co$next:
+  00F7' 29                      	add	hl,hl		; shift out next bit
+  00F8' D2 010B'                	jp	nc,not$out$device
+  00FB' E5                      	push	hl		; save the vector
+  00FC' C5                      	push	bc		; save the count and character
+  00FD'                         not$out$ready:
+  00FD' CD 0134'                	call	coster
+  0100' B7                      	or	a
+  0101' CA 00FD'                	jp	z,not$out$ready
+  0104' C1                      	pop	bc
+  0105' C5                      	push	bc		; restore and resave the character and device
+  0106' CD 0000#                	call	?co		; if device selected, print it
+  0109' C1                      	pop	bc		; recover count and character
+  010A' E1                      	pop	hl		; recover the rest of the vector
+  010B'                         not$out$device:
+  010B' 04                      	inc	b		; next device number
+  010C' 7C                      	ld	a,h
+  010D' B5                      	or	l		; see if any devices left
+  010E' 20 E7                   	jr	nz,co$next	; and go find them...
+  0110' C9                      	ret
+                                
+                                
+                                				; CONOST
+                                				; 	Console Output Status.  Return true if
+                                				; 		all selected console output devices
+                                				; 		are ready.
+                                
+  0111'                         conost:
+  0111' 2A 0000#                	ld	hl,(@covec)	; get console output bit vector
+  0114' 18 08                   	jr	ost$scan
+                                
+                                
+                                				; AUXOST
+                                				; 	Auxiliary Output Status.  Return true if
+                                				; 		all selected auxiliary output devices
+                                				; 		are ready.
+                                
+  0116'                         auxost:
+  0116' 2A 0000#                	ld	hl,(@aovec)	; get aux output bit vector
+  0119' 18 03                   	jr	ost$scan
+                                
+                                
+                                				; LISTST
+                                				; 	List Output Status.  Return true if
+                                				; 		all selected list output devices
+                                				; 		are ready.
+                                
+  011B'                         listst:
+ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    8
+Root module of relocatable BIOS for CP/M 3.0
+
+  011B' 2A 0000#                	ld	hl,(@lovec)	; get list output bit vector
+                                
+  011E'                         ost$scan:
+  011E' 06 00                   	ld	b,0		; start with device 0
+  0120'                         cos$next:
+  0120' 29                      	add	hl,hl		; check next bit
+  0121' E5                      	push	hl		; save the vector
+  0122' C5                      	push	bc		; save the count
+  0123' 3E FF                   	ld	a,0ffh		; assume device ready
+  0125' DC 0134'                	call	c,coster	; check status for this device
+  0128' C1                      	pop	bc		; recover count
+  0129' E1                      	pop	hl		; recover bit vector
+  012A' B7                      	or	a		; see if device ready
+  012B' C8                      	ret	z		; if any not ready, return false
+  012C' 04                      	inc	b		; drop device number
+  012D' 7C                      	ld	a,h
+  012E' B5                      	or	l		; see if any more selected devices
+  012F' 20 EF                   	jr	nz,cos$next
+  0131' F6 FF                   	or	0ffh		; all selected were ready, return true
+  0133' C9                      	ret
+                                
+  0134'                         coster:				; check for output device ready, including optional
+                                				; 	xon/xoff support
+  0134' 68                      	ld	l,b
+  0135' 26 00                   	ld	h,0		; make device code 16 bits
+  0137' E5                      	push	hl		; save it in stack
+  0138' 29                      	add	hl,hl
+  0139' 29                      	add	hl,hl
+  013A' 29                      	add	hl,hl		; create offset into device characteristics tbl
+  013B' 11 0000#                	ld	de,@ctbl+6
+  013E' 19                      	add	hl,de		; make address of mode byte
+  013F' 7E                      	ld	a,(hl)
+  0140' E6 10                   	and	mb$xon$xoff
+  0142' E1                      	pop	hl		; recover console number in <HL>
+  0143' CA 0000#                	jp	z,?cost		; not a xon device, go get output status direct
+  0146' 11 0225'                	ld	de,xofflist
+  0149' 19                      	add	hl,de		; make pointer to proper xon/xoff flag
+  014A' CD 0163'                	call	cist1		; see if this keyboard has character
+  014D' 7E                      	ld	a,(hl)
+  014E' C4 0175'                	call	nz,ci1		; get flag or read key if any
+  0151' FE 11                   	cp	ctlq
+  0153' 20 02                   	jr	nz,not$q	; if its a ctl-Q,
+  0155' 3E FF                   	ld	a,0ffh		; 	set the flag ready
+  0157'                         not$q:
+  0157' FE 13                   	cp	ctls
+  0159' 20 02                   	jr	nz,not$s	; if its a ctl-S,
+  015B' 3E 00                   	ld	a,00h		; 	clear the flag
+  015D'                         not$s:
+  015D' 77                      	ld	(hl),a		; save the flag
+  015E' CD 016C'                	call	cost1		; get the actual output status,
+  0161' A6                      	and	(hl)		; and mask with ctl-Q/ctl-S flag
+  0162' C9                      	ret			; return this as the status
+                                
+  0163'                         cist1:				; get input status with <BC> and <HL> saved
+  0163' C5                      	push	bc
+  0164' E5                      	push	hl
+  0165' CD 0000#                	call	?cist
+ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    9
+Root module of relocatable BIOS for CP/M 3.0
+
+  0168' E1                      	pop	hl
+  0169' C1                      	pop	bc
+  016A' B7                      	or	a
+  016B' C9                      	ret
+                                
+  016C'                         cost1:				; get output status, saving <BC> & <HL>
+  016C' C5                      	push	bc
+  016D' E5                      	push	hl
+  016E' CD 0000#                	call	?cost
+  0171' E1                      	pop	hl
+  0172' C1                      	pop	bc
+  0173' B7                      	or	a
+  0174' C9                      	ret
+                                
+  0175'                         ci1:				; get input, saving <BC> & <HL>
+  0175' C5                      	push	bc
+  0176' E5                      	push	hl
+  0177' CD 0000#                	call	?ci
+  017A' E1                      	pop	hl
+  017B' C1                      	pop	bc
+  017C' C9                      	ret
+                                
+                                	
+                                
+                                	
+                                
+                                				; CONST
+                                				; 	Console Input Status.  Return true if
+                                				; 		any selected console input device
+                                				; 		has an available character.
+                                
+  017D'                         const:
+  017D' 2A 0000#                	ld	hl,(@civec)	; get console input bit vector
+  0180' 18 03                   	jr	ist$scan
+                                
+                                
+                                				; AUXIST
+                                				; 	Auxiliary Input Status.  Return true if
+                                				; 		any selected auxiliary input device
+                                				; 		has an available character.
+                                
+  0182'                         auxist:
+  0182' 2A 0000#                	ld	hl,(@aivec)	; get aux input bit vector
+                                
+  0185'                         ist$scan:
+  0185' 06 00                   	ld	b,0		; start with device 0
+  0187'                         cis$next:
+  0187' 29                      	add	hl,hl		; check next bit
+  0188' 3E 00                   	ld	a,0		; assume device not ready
+  018A' DC 0163'                	call	c,cist1		; check status for this device
+  018D' B7                      	or	a
+  018E' C0                      	ret	nz		; if any ready, return true
+  018F' 04                      	inc	b		; drop device number
+  0190' 7C                      	ld	a,h
+  0191' B5                      	or	l		; see if any more selected devices
+  0192' 20 F3                   	jr	nz,cis$next
+  0194' AF                      	xor	a		; all selected were not ready, return false
+ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page   10
+Root module of relocatable BIOS for CP/M 3.0
+
+  0195' C9                      	ret
+                                
+                                
+                                				; CONIN
+                                				; 	Console Input.  Return character from first
+                                				; 		ready console input device.
+                                
+  0196'                         conin:
+  0196' 2A 0000#                	ld	hl,(@civec)
+  0199' 18 03                   	jr	in$scan
+                                
+                                
+                                				; AUXIN
+                                				; 	Auxiliary Input.  Return character from first
+                                				; 		ready auxiliary input device.
+                                
+  019B'                         auxin:
+  019B' 2A 0000#                	ld	hl,(@aivec)
+                                
+  019E'                         in$scan:
+  019E' E5                      	push	hl		; save bit vector
+  019F' 06 00                   	ld	b,0
+  01A1'                         ci$next:
+  01A1' 29                      	add	hl,hl		; shift out next bit
+  01A2' 3E 00                   	ld	a,0		; insure zero a  (nonexistant device not ready).
+  01A4' DC 0163'                	call	c,cist1		; see if the device has a character
+  01A7' B7                      	or	a
+  01A8' 20 08                   	jr	nz,ci$rdy	; this device has a character
+  01AA' 04                      	inc	b		; else, next device
+  01AB' 7C                      	ld	a,h
+  01AC' B5                      	or	l		; see if any more devices
+  01AD' 20 F2                   	jr	nz,ci$next	; go look at them
+  01AF' E1                      	pop	hl		; recover bit vector
+  01B0' 18 EC                   	jr	in$scan		; loop til we find a character
+                                
+  01B2'                         ci$rdy:
+  01B2' E1                      	pop	hl		; discard extra stack
+  01B3' C3 0000#                	jp	?ci
+                                
+                                
+                                ;	Utility Subroutines
+                                
+                                
+  01B6'                         ipchl:				; vectored CALL point
+  01B6' E9                      	jp	(hl)
+                                
+                                
+  01B7'                         ?pmsg:				; print message @<HL> up to a null
+                                				; saves <BC> & <DE>
+  01B7' C5                      	push	bc
+  01B8' D5                      	push	de
+  01B9'                         pmsg$loop:
+  01B9' 7E                      	ld	a,(hl)
+  01BA' B7                      	or	a
+  01BB' 28 09                   	jr	z,pmsg$exit
+  01BD' 4F                      	ld	c,a
+  01BE' E5                      	push	hl
+ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page   11
+Root module of relocatable BIOS for CP/M 3.0
+
+  01BF' CD 000C'                	call	?cono
+  01C2' E1                      	pop	hl
+  01C3' 23                      	inc	hl
+  01C4' 18 F3                   	jr	pmsg$loop
+  01C6'                         pmsg$exit:
+  01C6' D1                      	pop	de
+  01C7' C1                      	pop	bc
+  01C8' C9                      	ret
+                                
+  01C9'                         ?pdec:				; print binary number 0-65535 from <HL>
+  01C9' 01 01EE'                	ld	bc,table10
+  01CC' 11 D8F0                 	ld	de,-10000
+  01CF'                         next:
+  01CF' 3E 2F                   	ld	a,'0'-1
+  01D1'                         pdecl:
+  01D1' E5                      	push	hl
+  01D2' 3C                      	inc	a
+  01D3' 19                      	add	hl,de
+  01D4' 30 04                   	jr	nc,stoploop
+  01D6' 33                      	inc	sp
+  01D7' 33                      	inc	sp
+  01D8' 18 F7                   	jr	pdecl
+  01DA'                         stoploop:
+  01DA' D5                      	push	de
+  01DB' C5                      	push	bc
+  01DC' 4F                      	ld	c,a
+  01DD' CD 000C'                	call	?cono
+  01E0' C1                      	pop	bc
+  01E1' D1                      	pop	de
+  01E2'                         nextdigit:
+  01E2' E1                      	pop	hl
+  01E3' 0A                      	ld	a,(bc)
+  01E4' 5F                      	ld	e,a
+  01E5' 03                      	inc	bc
+  01E6' 0A                      	ld	a,(bc)
+  01E7' 57                      	ld	d,a
+  01E8' 03                      	inc	bc
+  01E9' 7B                      	ld	a,e
+  01EA' B2                      	or	d
+  01EB' 20 E2                   	jr	nz,next
+  01ED' C9                      	ret
+                                
+  01EE'                         table10:
+  01EE' FC18  FF9C  FFF6        	defw	-1000,-100,-10,-1,0
+  01F4' FFFF  0000              
+                                
+  01F8'                         ?pderr:
+  01F8' 21 00CA"                	ld	hl,drive$msg
+  01FB' CD 01B7'                	call	?pmsg		; error header
+  01FE' 3A 00E6"                	ld	a,(@adrv)
+  0201' C6 41                   	add	a,'A'
+  0203' 4F                      	ld	c,a
+  0204' CD 000C'                	call	?cono		; drive code
+  0207' 21 00DC"                	ld	hl,track$msg
+  020A' CD 01B7'                	call	?pmsg		; track header
+  020D' 2A 00E8"                	ld	hl,(@trk)
+  0210' CD 01C9'                	call	?pdec		; track number
+ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page   12
+Root module of relocatable BIOS for CP/M 3.0
+
+  0213' 21 00E1"                	ld	hl,sector$msg
+  0216' CD 01B7'                	call	?pmsg		; sector header
+  0219' 2A 00EA"                	ld	hl,(@sect)
+  021C' C3 01C9'                	jp	?pdec		; sector number
+                                
+                                
+                                				; BNKSEL
+                                				; 	Bank Select.  Select CPU bank for further execution.
+                                
+  021F'                         bnksel:
+  021F' 32 0235'                	ld	(@cbnk),a	; remember current bank
+  0222' C3 0000#                	jp	?bank		; and go exit through users
+                                				; physical bank select routine
+                                
+                                
+  0225'                         xofflist:
+  0225' FF FF FF FF FF FF       	defb	-1,-1,-1,-1,-1,-1,-1,-1 ; ctl-s clears to zero
+  022B' FF FF                   
+  022D' FF FF FF FF FF FF       	defb	-1,-1,-1,-1,-1,-1,-1,-1
+  0233' FF FF                   
+                                
+                                
+                                
+                                	dseg			; following resides in banked memory
+                                
+                                
+                                
+                                ;	Disk I/O interface routines
+                                
+                                
+                                				; SELDSK
+                                				; 	Select Disk Drive.  Drive code in <C>.
+                                				; 		Invoke login procedure for drive
+                                				; 		if this is first select.  Return
+                                				; 		address of disk parameter header
+                                				; 		in <HL>
+                                
+  003D"                         seldsk:
+  003D" 79                      	ld	a,c
+  003E" 32 00E6"                	ld	(@adrv),a	; save drive select code
+  0041" 69                      	ld	l,c
+  0042" 26 00                   	ld	h,0
+  0044" 29                      	add	hl,hl		; create index from drive code
+  0045" 01 0000#                	ld	bc,@dtbl
+  0048" 09                      	add	hl,bc		; get pointer to dispatch table
+  0049" 7E                      	ld	a,(hl)
+  004A" 23                      	inc	hl
+  004B" 66                      	ld	h,(hl)
+  004C" 6F                      	ld	l,a		; point at disk descriptor
+  004D" B4                      	or	h
+  004E" C8                      	ret	z		; if no entry in table, no disk
+  004F" 7B                      	ld	a,e
+  0050" E6 01                   	and	1
+  0052" 20 16                   	jr	nz,not$first$select ; examine login bit
+  0054" E5                      	push	hl
+  0055" EB                      	ex	de,hl		; put pointer in stack & <DE>
+  0056" 21 FFFE                 	ld	hl,-2
+ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page   13
+Root module of relocatable BIOS for CP/M 3.0
+
+  0059" 19                      	add	hl,de
+  005A" 7E                      	ld	a,(hl)
+  005B" 32 00E7"                	ld	(@rdrv),a	; get relative drive
+  005E" 21 FFFA                 	ld	hl,-6
+  0061" 19                      	add	hl,de		; find LOGIN addr
+  0062" 7E                      	ld	a,(hl)
+  0063" 23                      	inc	hl
+  0064" 66                      	ld	h,(hl)
+  0065" 6F                      	ld	l,a		; get address of LOGIN routine
+  0066" CD 01B6'                	call	ipchl		; call LOGIN
+  0069" E1                      	pop	hl		; recover DPH pointer
+  006A"                         not$first$select:
+  006A" C9                      	ret
+                                
+                                
+                                				; HOME
+                                				; 	Home selected drive.  Treated as SETTRK(0).
+                                
+  006B"                         home:
+  006B" 01 0000                 	ld	bc,0		; same as set track zero
+                                
+                                
+                                				; SETTRK
+                                				; 	Set Track. Saves track address from <BC> 
+                                				; 		in @TRK for further operations.
+                                
+  006E"                         settrk:
+  006E" ED 43 00E8"             	ld	(@trk),bc
+  0072" C9                      	ret
+                                
+                                
+                                				; SETSEC
+                                				; 	Set Sector.  Saves sector number from <BC>
+                                				; 		in @sect for further operations.
+                                
+  0073"                         setsec:
+  0073" ED 43 00EA"             	ld	(@sect),bc
+  0077" C9                      	ret
+                                
+                                
+                                				; SETDMA
+                                				; 	Set Disk Memory Address.  Saves DMA address
+                                				; 		from <BC> in @DMA and sets @DBNK to @CBNK
+                                				; 		so that further disk operations take place
+                                				; 		in current bank.
+                                
+  0078"                         setdma:
+  0078" ED 43 00EC"             	ld	(@dma),bc
+                                
+  007C" 3A 0235'                	ld	a,(@cbnk)	; default DMA bank is current bank
+                                				; fall through to set DMA bank
+                                
+                                				; SETBNK
+                                				; 	Set Disk Memory Bank.  Saves bank number
+                                				; 		in @DBNK for future disk data
+                                				; 		transfers.
+                                
+ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page   14
+Root module of relocatable BIOS for CP/M 3.0
+
+  007F"                         setbnk:
+  007F" 32 00EF"                	ld	(@dbnk),a
+  0082" C9                      	ret
+                                
+                                
+                                				; SECTRN
+                                				; 	Sector Translate.  Indexes skew table in <DE>
+                                				; 		with sector in <BC>.  Returns physical sector
+                                				; 		in <HL>.  If no skew table (<DE>=0) then
+                                				; 		returns physical=logical.
+                                
+  0083"                         sectrn:
+  0083" 69                      	ld	l,c
+  0084" 60                      	ld	h,b
+  0085" 7A                      	ld	a,d
+  0086" B3                      	or	e
+  0087" C8                      	ret	z
+  0088" EB                      	ex	de,hl
+  0089" 09                      	add	hl,bc
+  008A" 6E                      	ld	l,(hl)
+  008B" 26 00                   	ld	h,0
+  008D" C9                      	ret
+                                
+                                
+                                				; READ
+                                				; 	Read physical record from currently selected drive.
+                                				; 		Finds address of proper read routine from
+                                				; 		extended disk parameter header (XDPH).
+                                
+  008E"                         read:
+  008E" 2A 00E6"                	ld	hl,(@adrv)
+  0091" 26 00                   	ld	h,0
+  0093" 29                      	add	hl,hl		; get drive code and double it
+  0094" 11 0000#                	ld	de,@dtbl
+  0097" 19                      	add	hl,de		; make address of table entry
+  0098" 7E                      	ld	a,(hl)
+  0099" 23                      	inc	hl
+  009A" 66                      	ld	h,(hl)
+  009B" 6F                      	ld	l,a		; fetch table entry
+  009C" E5                      	push	hl		; save address of table
+  009D" 11 FFF8                 	ld	de,-8
+  00A0" 19                      	add	hl,de		; point to read routine address
+  00A1" 18 13                   	jr	rw$common	; use common code
+                                
+                                
+                                				; WRITE
+                                				; 	Write physical sector from currently selected drive.
+                                				; 		Finds address of proper write routine from
+                                				; 		extended disk parameter header (XDPH).
+                                
+  00A3"                         write:
+  00A3" 2A 00E6"                	ld	hl,(@adrv)
+  00A6" 26 00                   	ld	h,0
+  00A8" 29                      	add	hl,hl		; get drive code and double it
+  00A9" 11 0000#                	ld	de,@dtbl
+  00AC" 19                      	add	hl,de		; make address of table entry
+  00AD" 7E                      	ld	a,(hl)
+ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page   15
+Root module of relocatable BIOS for CP/M 3.0
+
+  00AE" 23                      	inc	hl
+  00AF" 66                      	ld	h,(hl)
+  00B0" 6F                      	ld	l,a		; fetch table entry
+  00B1" E5                      	push	hl		; save address of table
+  00B2" 11 FFF6                 	ld	de,-10
+  00B5" 19                      	add	hl,de		; point to write routine address
+                                
+  00B6"                         rw$common:
+  00B6" 7E                      	ld	a,(hl)
+  00B7" 23                      	inc	hl
+  00B8" 66                      	ld	h,(hl)
+  00B9" 6F                      	ld	l,a		; get address of routine
+  00BA" D1                      	pop	de		; recover address of table
+  00BB" 1B                      	dec	de
+  00BC" 1B                      	dec	de		; point to relative drive
+  00BD" 1A                      	ld	a,(de)
+  00BE" 32 00E7"                	ld	(@rdrv),a	; get relative drive code and post it
+  00C1" 13                      	inc	de
+  00C2" 13                      	inc	de		; point to DPH again
+  00C3" E9                      	jp	(hl)		; leap to driver
+                                
+                                
+                                				; MULTIO
+                                				; 	Set multiple sector count. Saves passed count in
+                                				; 		@CNT
+                                
+  00C4"                         multio:
+  00C4" 32 00EE"                	ld	(@cnt),a
+  00C7" C9                      	ret
+                                
+                                
+                                				; FLUSH
+                                				; 	BIOS deblocking buffer flush.  Not implemented.
+                                
+  00C8"                         flush:
+  00C8" AF                      	xor	a
+  00C9" C9                      	ret			; return with no error
+                                
+                                
+                                
+                                				; error message components
+  00CA"                         drive$msg:
+  00CA" 0D 0A 07 42 49 4F       	defb	cr,lf,bell,'BIOS Error on ',0
+  00D0" 53 20 45 72 72 6F       
+  00D6" 72 20 6F 6E 20 00       
+  00DC"                         track$msg:
+  00DC" 3A 20 54 2D 00          	defb	': T-',0
+  00E1"                         sector$msg:
+  00E1" 2C 20 53 2D 00          	defb	', S-',0
+                                
+                                
+                                				; disk communication data items
+                                
+  00E6" ( 0001 )                @adrv:	defs	1		; currently selected disk drive
+  00E7" ( 0001 )                @rdrv:	defs	1		; controller relative disk drive
+  00E8" ( 0002 )                @trk:	defs	2		; current track number
+  00EA" ( 0002 )                @sect:	defs	2		; current sector number
+ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page   16
+Root module of relocatable BIOS for CP/M 3.0
+
+  00EC" ( 0002 )                @dma:	defs	2		; current DMA address
+  00EE" 00                      @cnt:	defb	0		; record count for multisector transfer
+  00EF" 00                      @dbnk:	defb	0		; bank for DMA operations
+                                
+                                
+                                	cseg			; common memory
+                                
+  0235' 00                      @cbnk:	defb	0		; bank for processor operations
+                                
+                                
+  0000  =                       	end
+
+Errors: 0
+ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page   17
+
+Symbols:
+?AUXI ............ 0015'P ?AUXIS ........... 0036'P ?AUXO ............ 0012'P
+?AUXOS ........... 0039'P ?BANK ............ 0000#  ?BNKSL ........... 0051'P
+?BOOT ............ 0000'P ?CI .............. 0000#  ?CINIT ........... 0000#
+?CIST ............ 0000#  ?CNSTFLG ......... 0000#  ?CO .............. 0000#
+?CONIN ........... 0009'P ?CONO ............ 000C'P ?CONOS ........... 0033'P
+?CONST ........... 0006'P ?COST ............ 0000#  ?DEVIN ........... 003F'P
+?DRTBL ........... 0042'P ?DVTBL ........... 003C'P ?FLUSH ........... 0048'P
+?HOME ............ 0018'P ?INIT ............ 0000#  ?LDCCP ........... 0000#
+?LIST ............ 000F'P ?LISTS ........... 002D'P ?MLTIO ........... 0045'P
+?MOV ............. 004B'P ?MOVE ............ 0000#  ?PDEC ............ 01C9'P
+?PDERR ........... 01F8'P ?PMSG ............ 01B7'P ?READ ............ 0027'P
+?RLCCP ........... 0000#  ?SCTRN ........... 0030'P ?SLDSK ........... 001B'P
+?STBNK ........... 0054'P ?STDMA ........... 0024'P ?STSEC ........... 0021'P
+?STTRK ........... 001E'P ?TIM ............. 004E'P ?TIME ............ 0000#
+?WBOOT ........... 0003'P ?WRITE ........... 002A'P ?XMOV ............ 0057'P
+?XMOVE ........... 0000#  @ADRV ............ 00E6"P @AIVEC ........... 0000#
+@AOVEC ........... 0000#  @BNKBF ........... 0000#  @CBNK ............ 0235'P
+@CIVEC ........... 0000#  @CNT ............. 00EE"P @COVEC ........... 0000#
+@CTBL ............ 0000#  @DBNK ............ 00EF"P @DMA ............. 00EC"P
+@DTBL ............ 0000#  @LOVEC ........... 0000#  @MXTPA ........... 0000#
+@RDRV ............ 00E7"P @SECT ............ 00EA"P @TRK ............. 00E8"P
+AUXIN ............ 019B'  AUXIST ........... 0182'  AUXOST ........... 0116'
+AUXOUT ........... 00ED'  BANKED ........... FFFF   BAUD$110 ......... 0003 
+BAUD$1200 ........ 0008   BAUD$134 ......... 0004   BAUD$150 ......... 0005 
+BAUD$1800 ........ 0009   BAUD$19200 ....... 000F   BAUD$2400 ........ 000A 
+BAUD$300 ......... 0006   BAUD$3600 ........ 000B   BAUD$4800 ........ 000C 
+BAUD$50 .......... 0001   BAUD$600 ......... 0007   BAUD$7200 ........ 000D 
+BAUD$75 .......... 0002   BAUD$9600 ........ 000E   BAUD$NONE ........ 0000 
+BELL ............. 0007   BNKSEL ........... 021F'  BOOT ............. 0000"
+BOOT$1 ........... 006B'  BOOT$STACK ....... 00E0'  C$INIT$LOOP ...... 0005"
+CCP .............. 0100   CI$NEXT .......... 01A1'  CI$RDY ........... 01B2'
+CI1 .............. 0175'  CIS$NEXT ......... 0187'  CIST1 ............ 0163'
+CNSTMD ........... 005A'  CNSTMDE .......... 0063'  CO$NEXT .......... 00F7'
+CONIN ............ 0196'  CONOST ........... 0111'  CONOUT ........... 00E8'
+CONST ............ 017D'  COS$NEXT ......... 0120'  COST1 ............ 016C'
+COSTER ........... 0134'  CR ............... 000D   CTLQ ............. 0011 
+CTLS ............. 0013   D$INIT$LOOP ...... 0017"  D$INIT$NEXT ...... 0035"
+DEVTBL ........... 00E0'  DRIVE$MSG ........ 00CA"  FALSE ............ 0000 
+FLUSH ............ 00C8"  GETDRV ........... 00E4'  HOME ............. 006B"
+IN$SCAN .......... 019E'  IPCHL ............ 01B6'  IST$SCAN ......... 0185'
+JMP .............. 00C3   LF ............... 000A   LIST ............. 00F2'
+LISTST ........... 011B'  MB$IN$OUT ........ 0003   MB$INPUT ......... 0001 
+MB$OUTPUT ........ 0002   MB$SERIAL ........ 0008   MB$SOFT$BAUD ..... 0004 
+MB$XON$XOFF ...... 0010   MULTIO ........... 00C4"  NEXT ............. 01CF'
+NEXTDIGIT ........ 01E2'  NOT$FIRST$SELEC .. 006A"  NOT$OUT$DEVICE ... 010B'
+NOT$OUT$READY .... 00FD'  NOT$Q ............ 0157'  NOT$S ............ 015D'
+OST$SCAN ......... 011E'  OUT$SCAN ......... 00F5'  PDECL ............ 01D1'
+PMSG$EXIT ........ 01C6'  PMSG$LOOP ........ 01B9'  READ ............. 008E"
+RW$COMMON ........ 00B6"  SECTOR$MSG ....... 00E1"  SECTRN ........... 0083"
+SELDSK ........... 003D"  SET$JUMPS ........ 0086'  SETBNK ........... 007F"
+SETDMA ........... 0078"  SETSEC ........... 0073"  SETTRK ........... 006E"
+STOPLOOP ......... 01DA'  TABLE10 .......... 01EE'  TRACK$MSG ........ 00DC"
+TRUE ............. FFFF   WBOOT ............ 0074'  WRITE ............ 00A3"
+XOFFLIST ......... 0225'  
+

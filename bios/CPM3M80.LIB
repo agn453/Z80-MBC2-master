@@ -1,0 +1,206 @@
+	.xlist
+;-------------------------------------------------------------------------
+;
+;	Macro Definitions for CP/M3 BIOS Data Structures.
+;
+;	Modified by John Hastwell-Batten from DR supplied CPM3.LIB
+;	to syntax supported by Microsoft's MACRO-80 in Z80 mode
+;						   April 1984
+;
+;	Modified by Tony Nicholson to fix dph macro when checksum$size
+;	is specified as 0 (for permanently mounted disks). DPB should
+;	have the CSV set to 0000h (and not a pointer to a zero length
+;	checksum vector!). Also allow dtbl macro to have non-contiguous
+;	drive assignments (use a blank parameter to skip a drive letter)
+;						 14-Aug-2018
+;
+;	Modified by Tony Nicholson to check number of directory entries
+;	in the dpb macro for specified block size (Too many can't be
+;	catered for by the al0 and al0 allocation vectors)
+;						16-Nov-2018
+;
+;-------------------------------------------------------------------------
+	; dtbl	<dph0,dph1,...>		- drive table
+
+	; dph	translate$table,	- disk parameter header
+	;	disk$parameter$block,
+	;	checksum$size,			(optional)
+	;	alloc$size			(optional)
+
+	; skew	sectors,		- skew table
+	;	skew$factor,
+	;	first$sector$number
+
+	; dpb	physical$sector$size,	- disk parameter block
+	;	physical$sectors$per$track,
+	;	number$tracks,
+	;	block$size,
+	;	number$dir$entries,
+	;	track$offset,
+	;	checksum$vec$size		(optional)
+
+;	Drive Table.  Contains 16 one word entries.
+
+dtbl	macro	?list
+	local	?n
+?n	defl	0
+	irp	?drv,<?list>
+	  ifb	<?drv>
+	    defw  0
+	  else
+	    defw  ?drv
+	  endif
+?n	  defl	  ?n+1
+	endm
+
+	ift	?n gt 16
+	  .printx 'DTBL macro error: Too many drives.  Max 16 allowed'
+	  exitm	
+	endif
+
+	ift	?n lt 16
+	  rept	  (16-?n)
+	    defw  0
+	  endm	
+	endif	
+
+	endm	
+
+dph	macro	?trans,?dpb,?csize,?asize	;;Disk Parameter Header
+	local	?csv,?alv
+	defw	?trans			; translate table address
+	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
+	defb	0			; media flag
+	defw	?dpb			; disk parameter block
+	if nul ?csize
+	  defw	  0fffeh		; checksum vector allocated by GENCPM
+	else				;; User-allocated
+	 if ?csize eq 0			;AGN
+	  defw	00000h			; CSV for permanently mounted drive
+	 else
+	  defw	  ?csv			; checksum vector
+	 endif
+	endif
+	if nul ?asize
+	  defw	  0fffeh		; alloc vector allocated by GENCPM
+	else				;; User-allocated
+	  defw	  ?alv			; allocation vector
+	endif
+	defw	0fffeh,0fffeh,0fffeh	; dirbcb, dtabcb, hash allocated
+					;	by GENCPM
+	defb	0			; hash bank
+	if not nul ?csize
+?csv:	  defs	  ?csize		; checksum vector
+	endif
+	if not nul ?asize
+?alv:	  defs	  ?asize		; allocation vector
+	endif
+	endm
+
+dpb	macro	?psize,?pspt,?trks,?bls,?ndirs,?off,?ncks
+	local	?spt,?bsh,?blm,?exm,?dsm,?drm,?al0,?al1,?cks,?psh,?psm
+	local	?n
+;; physical sector mask and physical sector shift
+?psh	defl	0
+?n	defl	?psize/128
+?psm	defl	?n-1
+	rept	8
+?n	  defl	  ?n/2
+	  ift	  ?n eq 0
+	    exitm
+	  endif
+?psh	  defl	  ?psh + 1
+	endm
+?spt	defl	?pspt*(?psize/128)
+?bsh	defl	3
+?n	defl	?bls/1024
+	rept	8
+?n	  defl	  ?n/2
+	  ift	  ?n eq 0
+	    exitm
+	  endif
+?bsh	  defl	  ?bsh + 1
+	endm
+?blm	defl	?bls/128-1
+?size	defl	(?trks-?off)*?spt
+?dsm	defl	?size/(?bls/128)-1
+?exm	defl	?bls/1024
+	ift	?dsm gt 255
+	  ift	  ?bls eq 1024
+	  .printx "DPB macro error: Can't have this size disk with 1k block size"
+	  exitm
+	  endif
+?exm	  defl	  ?exm/2
+	endif
+?exm	defl	?exm-1
+?all	defl	0
+?n	defl	(?ndirs*32+?bls-1)/?bls
+	rept	?n
+?all	  defl	  (?all shr 1) or 8000h
+	endm
+?al0	defl	?all shr 8
+?al1	defl	?all and 0ffh
+	if ?ndirs gt (?bls shr 1)
+	.printx	"DPB macro error: Too many directory entries for this block size"
+	exitm
+	endif
+?drm	defl	?ndirs-1
+	if nul ?ncks
+?cks	  defl	  ?ndirs/4
+	else
+?cks	  defl	  ?ncks
+	endif
+	defw	?spt		; Number of 128 byte records per track
+	defb	?bsh,?blm	; block shift and mask
+	defb	?exm		; extent mask
+	defw	?dsm		; maximum block number
+	defw	?drm		; maximum directory entry number
+	defb	?al0,?al1	; alloc vector for directory
+	defw	?cks		; checksum size
+	defw	?off		; offset for system tracks
+	defb	?psh,?psm	; physical sector size shift and mask
+	endm
+
+gcd	macro	?m,?n
+			;;	greatest common divisor of m,n
+			;;	produces value gcdn as result
+			;;	(used in sector translate table generation)
+?gcdm	defl	?m	;;variable for m
+?gcdn	defl	?n	;;variable for n
+?gcdr	defl	0	;;variable for r
+	rept	65535
+?gcdr	  defl	  ?gcdm mod ?gcdn
+	  ift	  ?gcdr eq 0
+	    exitm
+	  endif
+?gcdm	  defl	  ?gcdn
+?gcdn	  defl	  ?gcdr
+	endm
+	endm	
+
+skew	macro	?secs,?skf,?fsc
+			;;	generate the translate table
+?nxtsec	defl	0	;;next sector to fill
+?nxtbas	defl	0	;;moves by one on overflow
+	gcd	?secs,?skf
+			;;	?gcdn = gcd(?secs,skew)
+?neltst	defl	?secs/?gcdn
+			;;	neltst is number of elements to generate
+			;;	before we overlap previous elements
+?nelts	defl	?neltst	;;counter
+	rept	?secs	;;once for each sector
+	defb	?nxtsec+?fsc
+?nxtsec	defl	?nxtsec+?skf
+	ift	?nxtsec ge ?secs
+?nxtsec	  defl	  ?nxtsec-?secs
+	endif
+?nelts	defl	?nelts-1
+	ift	?nelts eq 0
+?nxtbas	  defl	  ?nxtbas+1
+?nxtsec	  defl	  ?nxtbas
+?nelts	  defl	  ?neltst
+	endif
+	endm
+	endm
+	.list
+
