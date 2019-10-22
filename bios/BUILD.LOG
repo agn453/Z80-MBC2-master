@@ -2,7 +2,7 @@
 H>;
 H>DATE
 A:DATE     COM
-Tue 22/10/2019 09:35:31
+Tue 22/10/2019 21:37:02
 H>;
 H>; Assemble and cross reference the original RMAC 8080 source-code version
 H>RMAC BIOSKRNL
@@ -121,7 +121,7 @@ USE FACTOR     20
 
 H>;
 H>; Make a BIOS image for binary comparison with Z80 source version
-H>LINK BIOS-ORG.BIN=BIOSKRNL,BOOT,CHARIO,MOVE,SCB,VDISK
+H>LINK BIOS-ORG.BIN=BIOSKRNL,SCB,BOOT,CHARIO,MOVE,VDISK
 A:LINK     COM
 LINK 1.31
 
@@ -129,10 +129,10 @@ LINK 1.31
 @DMA     079A   @DBNK    079D   @CNT     079C   @CBNK    0349   
 @COVEC   FE24   @CIVEC   FE22   @AOVEC   FE28   @AIVEC   FE26   
 @LOVEC   FE2A   @MXTPA   FE62   @BNKBF   FE35   @CTBL    062A   
-@DTBL    09DD   @SEC     FE5C   @MIN     FE5B   @HOUR    FE5A   
-@DATE    FE58   @CRDMA   FE3C   @CRDSK   FE3E   @VINFO   FE3F   
+@DTBL    09DD   @CRDMA   FE3C   @CRDSK   FE3E   @VINFO   FE3F   
 @RESEL   FE41   @FX      FE43   @USRCD   FE44   @MLTIO   FE4A   
 @ERMDE   FE4B   @ERDSK   FE51   @MEDIA   FE54   @BFLGS   FE57   
+@DATE    FE58   @HOUR    FE5A   @MIN     FE5B   @SEC     FE5C   
 
 ABSOLUTE     0000
 CODE SIZE    05A7 (0100-06A6)
@@ -218,7 +218,7 @@ USE FACTOR     23
 
 H>;
 H>; Make a BIOS image for binary comparison
-H>LINK BIOS-Z80.BIN=BIOSKRNL,BOOT,CHARIO,MOVE,SCB,VDISK
+H>LINK BIOS-Z80.BIN=BIOSKRNL,SCB,BOOT,CHARIO,MOVE,VDISK
 A:LINK     COM
 LINK 1.31
 
@@ -226,10 +226,10 @@ LINK 1.31
 @LOVEC   FE2A   @MXTPA   FE62   @BNKBF   FE35   @CTBL    062A   
 @DTBL    09DD   @ADRV    0794   @RDRV    0795   @TRK     0796   
 @SECT    0798   @DMA     079A   @DBNK    079D   @CNT     079C   
-@CBNK    0349   @SEC     FE5C   @MIN     FE5B   @HOUR    FE5A   
-@DATE    FE58   @CRDMA   FE3C   @CRDSK   FE3E   @VINFO   FE3F   
+@CBNK    0349   @CRDMA   FE3C   @CRDSK   FE3E   @VINFO   FE3F   
 @RESEL   FE41   @FX      FE43   @USRCD   FE44   @MLTIO   FE4A   
 @ERMDE   FE4B   @ERDSK   FE51   @MEDIA   FE54   @BFLGS   FE57   
+@DATE    FE58   @HOUR    FE5A   @MIN     FE5B   @SEC     FE5C   
 
 ABSOLUTE     0000
 CODE SIZE    05A7 (0100-06A6)
@@ -241,7 +241,7 @@ H>;
 H>; Do the comparison of the original source build with
 H>; the converted Z80 source build - there should be NO differences
 H>BINCOM BIOS-ORG.BIN BIOS-Z80.BIN
-A:BINCOM   COM
+H:BINCOM   COM
 BINCOM - Binary Compare
 
 File 1:  BIOS-ORGBIN
@@ -266,7 +266,7 @@ A:PIP      COM
 
 H>;
 H>; Make banked memory page relocatable of BIOS for GENCPM to use
-H>LINK BNKBIOS3[B]=BIOSKRNL,BOOT,CHARIO,MOVE,SCB,VDISK
+H>LINK BNKBIOS3[B]=BIOSKRNL,SCB,BOOT,CHARIO,MOVE,VDISK
 A:LINK     COM
 LINK 1.31
 
@@ -274,10 +274,10 @@ LINK 1.31
 @LOVEC   FE2A   @MXTPA   FE62   @BNKBF   FE35   @CTBL    052A   
 @DTBL    0936   @ADRV    06ED   @RDRV    06EE   @TRK     06EF   
 @SECT    06F1   @DMA     06F3   @DBNK    06F6   @CNT     06F5   
-@CBNK    0249   @SEC     FE5C   @MIN     FE5B   @HOUR    FE5A   
-@DATE    FE58   @CRDMA   FE3C   @CRDSK   FE3E   @VINFO   FE3F   
+@CBNK    0249   @CRDMA   FE3C   @CRDSK   FE3E   @VINFO   FE3F   
 @RESEL   FE41   @FX      FE43   @USRCD   FE44   @MLTIO   FE4A   
 @ERMDE   FE4B   @ERDSK   FE51   @MEDIA   FE54   @BFLGS   FE57   
+@DATE    FE58   @HOUR    FE5A   @MIN     FE5B   @SEC     FE5C   
 
 ABSOLUTE     0000
 CODE SIZE    05A7 (0000-05A6)
@@ -315,7 +315,7 @@ Rubout echoes erased character (Y) ?
 
 Initial default drive (A:) ? 
 
-Top page of memory (FD) ? 
+Top page of memory (FF) ? 
 Bank switched memory (Y) ? 
 Common memory base page (80) ? 
 
@@ -359,15 +359,17 @@ Setting up Checksum vector for drive P:
 *** Bank 1 and Common are not included ***
 *** in the memory segment table.       ***
 
-Number of memory segments (#1) ? 
+Number of memory segments (#2) ? 
 
 CP/M 3 Base,size,bank (26,5A,00)
 
 Enter memory segment table:
  Base,size,bank (00,26,00) ? 
+ Base,size,bank (00,80,02) ? 
 
  CP/M 3 Sys    2600H 5A00H  Bank 00
  Memseg No. 00 0000H 2600H  Bank 00
+ Memseg No. 01 0000H 8000H  Bank 02
 
 Accept new memory segment table entries (Y) ? 
 
@@ -394,85 +396,92 @@ Accept new memory segment table entries (Y) ?
 The physical record size is 0200H:
 
      Available space in 256 byte pages:
-     TPA = 00F2H, Bank 0 = 0026H
+     TPA = 00F4H, Bank 0 = 0026H
 
-               Number of directory buffers for drive A: (#1) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F2H, Bank 0 = 0023H
-
-               Number of data buffers for drive A: (#1) ? 
+               Number of directory buffers for drive A: (#8) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0023H
+     TPA = 00F4H, Bank 0 = 0015H
 
-               Number of directory buffers for drive B: (#1) ? 
+               Number of data buffers for drive A: (#2) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0021H
+     TPA = 00F0H, Bank 0 = 0015H
+
+               Number of directory buffers for drive B: (#0) ? 
+               Share buffer(s) with which drive (A:) ? 
+
+     Available space in 256 byte pages:
+     TPA = 00F0H, Bank 0 = 0015H
 
                Number of data buffers for drive B: (#0) ? 
                Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0021H
+     TPA = 00F0H, Bank 0 = 0015H
 
-               Number of directory buffers for drive C: (#1) ? 
+               Number of directory buffers for drive C: (#0) ? 
+               Share buffer(s) with which drive (B:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 001FH
+     TPA = 00F0H, Bank 0 = 0015H
 
                Number of data buffers for drive C: (#0) ? 
                Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 001FH
+     TPA = 00F0H, Bank 0 = 0015H
 
-               Number of directory buffers for drive D: (#1) ? 
+               Number of directory buffers for drive D: (#0) ? 
+               Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 001DH
+     TPA = 00F0H, Bank 0 = 0015H
 
                Number of data buffers for drive D: (#0) ? 
                Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 001DH
+     TPA = 00F0H, Bank 0 = 0015H
 
-               Number of directory buffers for drive E: (#1) ? 
+               Number of directory buffers for drive E: (#0) ? 
+               Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 001BH
+     TPA = 00F0H, Bank 0 = 0015H
 
                Number of data buffers for drive E: (#0) ? 
                Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 001BH
+     TPA = 00F0H, Bank 0 = 0015H
 
-               Number of directory buffers for drive F: (#1) ? 
+               Number of directory buffers for drive F: (#0) ? 
+               Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0019H
+     TPA = 00F0H, Bank 0 = 0015H
 
                Number of data buffers for drive F: (#0) ? 
                Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0019H
+     TPA = 00F0H, Bank 0 = 0015H
 
-               Number of directory buffers for drive G: (#1) ? 
+               Number of directory buffers for drive G: (#0) ? 
+               Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0017H
+     TPA = 00F0H, Bank 0 = 0015H
 
                Number of data buffers for drive G: (#0) ? 
                Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0017H
+     TPA = 00F0H, Bank 0 = 0015H
 
-               Number of directory buffers for drive H: (#1) ? 
+               Number of directory buffers for drive H: (#0) ? 
+               Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
      TPA = 00F0H, Bank 0 = 0015H
@@ -483,93 +492,101 @@ The physical record size is 0200H:
      Available space in 256 byte pages:
      TPA = 00F0H, Bank 0 = 0015H
 
-               Number of directory buffers for drive I: (#1) ? 
+               Number of directory buffers for drive I: (#0) ? 
+               Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0013H
+     TPA = 00F0H, Bank 0 = 0015H
 
                Number of data buffers for drive I: (#0) ? 
                Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0013H
+     TPA = 00F0H, Bank 0 = 0015H
 
-               Number of directory buffers for drive J: (#1) ? 
+               Number of directory buffers for drive J: (#0) ? 
+               Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0011H
+     TPA = 00F0H, Bank 0 = 0015H
 
                Number of data buffers for drive J: (#0) ? 
                Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0011H
+     TPA = 00F0H, Bank 0 = 0015H
 
-               Number of directory buffers for drive K: (#1) ? 
+               Number of directory buffers for drive K: (#0) ? 
+               Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 000FH
+     TPA = 00F0H, Bank 0 = 0015H
 
                Number of data buffers for drive K: (#0) ? 
                Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 000FH
+     TPA = 00F0H, Bank 0 = 0015H
 
-               Number of directory buffers for drive L: (#1) ? 
+               Number of directory buffers for drive L: (#0) ? 
+               Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 000DH
+     TPA = 00F0H, Bank 0 = 0015H
 
                Number of data buffers for drive L: (#0) ? 
                Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 000DH
+     TPA = 00F0H, Bank 0 = 0015H
 
-               Number of directory buffers for drive M: (#1) ? 
+               Number of directory buffers for drive M: (#0) ? 
+               Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 000BH
+     TPA = 00F0H, Bank 0 = 0015H
 
                Number of data buffers for drive M: (#0) ? 
                Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 000BH
+     TPA = 00F0H, Bank 0 = 0015H
 
-               Number of directory buffers for drive N: (#1) ? 
+               Number of directory buffers for drive N: (#0) ? 
+               Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0009H
+     TPA = 00F0H, Bank 0 = 0015H
 
                Number of data buffers for drive N: (#0) ? 
                Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0009H
+     TPA = 00F0H, Bank 0 = 0015H
 
-               Number of directory buffers for drive O: (#1) ? 
+               Number of directory buffers for drive O: (#0) ? 
+               Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0007H
+     TPA = 00F0H, Bank 0 = 0015H
 
                Number of data buffers for drive O: (#0) ? 
                Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0007H
+     TPA = 00F0H, Bank 0 = 0015H
 
-               Number of directory buffers for drive P: (#1) ? 
+               Number of directory buffers for drive P: (#0) ? 
+               Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0005H
+     TPA = 00F0H, Bank 0 = 0015H
 
                Number of data buffers for drive P: (#0) ? 
                Share buffer(s) with which drive (A:) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0005H
+     TPA = 00F0H, Bank 0 = 0015H
 
 
 Accept new buffer definitions (Y) ? 
@@ -583,11 +600,14 @@ Accept new buffer definitions (Y) ?
 H>ERA CPM3BANK.SYS
 H>REN CPM3BANK.SYS=CPM3.SYS
 H>;
+H>; Compare resultant system image with original one on A: drive
+H>;BINCOM A:CPM3-128.SYS CPM3BANK.SYS
+H>;
 H>DATE
 A:DATE     COM
-Tue 22/10/2019 09:47:41
+Tue 22/10/2019 21:53:06
 H>;
 H>; All done - end of log file
 H>PUT CONSOLE TO CONSOLE
 A:PUT      COM
-
+

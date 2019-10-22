@@ -23,16 +23,14 @@ Modification History (in reverse chronological order):
 -----------
 
 Firstly, I have attempted to re-construct the distributed CP/M 3 system
-image file (CPM3-128.SYS) - so far unsuccessfully (I'm waiting on details
-concerning the original build procedure and GENCPM configuration file).
+image file (CPM3-128.SYS).
 
 The build procedure submit file BUILD.SUB does a long-winded build of the
 original Intel 8080 sourcecode modules (.ASM files) and my translated
 sourcecode modules (.Z80 files).  Both the original and translated build
-files produce byte-identical BIOS images.  As soon as I have the original
-build files, I can substitute my attempt at reconstruction in the
-GENCPM.ORG file (this is the data file input to the CP/M 3 system generation
-program GENCPM.COM).
+files produce byte-identical BIOS images.  However, even using the
+original GENCPM.ORG configuration, I'm unable to get a byte-for-byte
+exact copy of the distributed banked system CPM3-128.SYS
 
 Secondly, I have modified the Z80 sourcecode modules to -
 
@@ -102,11 +100,13 @@ A>setdef * a: [order=(com,sub) display uk]
 ```
 
 If you don't wish to rebuild everything from sourcecode, the file ZPM3.SYS
-can be copied to CPM3.SYS prior to rebooting with a RESET.
+can be copied to CPM3.SYS on the A: drive prior to rebooting with a RESET.
 
 ZPM3 has a built-in command editor that uses WordStar compatible keystrokes.
 CTRL-X and CTRL-E advance and goback each command, and CTRL-Y is used to
-remove a command line.  Full documentation is on the Tesseract Volume 93.
+remove a command line.  CTRL-S and CTRL-D are cursor left and right and
+CTRL-G is delete current character.  Full documentation is on the
+Tesseract Volume 93.
 
 If you wish to download all modules in a single convenient file then
 fetch the

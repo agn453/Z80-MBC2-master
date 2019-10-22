@@ -2,7 +2,7 @@
 H>;
 H>DATE
 A:DATE     COM
-Tue 22/10/2019 09:57:29
+Tue 22/10/2019 21:22:14
 H>;
 H>; Assemble the modified Z80 translated source-code versions (.MAC sources)
 H>ZSM4 BIOSKRNL,BIOSKRNL.LIS=BIOSKRNL
@@ -120,7 +120,7 @@ H>ERA GENCPM.DAT
 H>PIP GENCPM.DAT=GENCPM.ZPR
 A:PIP      COM
 
-H>GENCPM3  
+H>GENCPM3 AUTO DISPLAY
 H:GENCPM3  COM
 
 
@@ -132,7 +132,7 @@ Default base is Hex, precede entry with # for decimal
 
 Use GENCPM.DAT for defaults (Y) ? 
 
-Create a new GENCPM.DAT file (N) ? y
+Create a new GENCPM.DAT file (N) ? 
 
 Display Load Map at Cold Boot (Y) ? 
 
@@ -397,6 +397,9 @@ Accept new buffer definitions (Y) ?
 *** CP/M 3.0 SYSTEM GENERATION DONE ***
 H>ERA TEST.SYS
 H>REN TEST.SYS=CPM3.SYS
+H>PIP ZPM3.SYS=TEST.SYS
+A:PIP      COM
+
 H>;
 H>; Make TEST.COM system loader containing TEST.SYS
 H>; (this doesn't work on distributed CPM3-128.SYS
@@ -407,9 +410,9 @@ A:PIP      COM
 H>;
 H>DATE
 A:DATE     COM
-Tue 22/10/2019 10:03:41
+Tue 22/10/2019 21:29:24
 H>;
 H>; All done - end of log file
 H>PUT CONSOLE TO CONSOLE
 A:PUT      COM
-
+
