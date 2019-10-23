@@ -12,7 +12,7 @@ for details)
 The original BIOS modules (extracted from the Hackaday microSD
 SD-S220718-R280819-v1.zip file)
 have been translated from the original RMAC-style 8080 Assembly language
-format into Zilog Z80 mnemonics that can be assembled using the
+format into Zilog Z80 mnemonics and can be assembled using the
 Microsoft M80 Macro Assembler or (my preferred) Hector Peraza's ZSM4 Macro
 Assembler(2).
 
@@ -115,6 +115,7 @@ with a command like ```nulu d:MBC2BIOS.LBR -e *.*``` from the CP/M prompt.
 All the files (and assembly listings) are in the bios directory.
 
 --
+
 (1) ZPM3 sourcecode can be obtained from the Tesseract RCPM+ archives
 in Volume 93 at
 http://www.classiccmp.org/cpmarchives/cpm/mirrors/www.triton.vg/TesseractRCPM+Catalog.html#vol93
