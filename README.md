@@ -1,20 +1,20 @@
 # Z80-MBC2-master
 Custom CP/M 3 BIOS for Z80-MBC2 single board computer
+=====================================================
 
 This repository contains the original CP/M 3 BIOS source files, plus
 my modified files to support either the original DR supplied CP/M 3
-BDOS modules, or Simeon Cran's ZPM3 replacement BDOS modules for the
+BDOS modules, or Simeon Cran's ZPM3(1) replacement BDOS modules for the
 Z80-MBC2 single board computer
-( see https://hackaday.io/project/159973-z80-mbc2-4ics-homemade-z80-computer )
+(see https://hackaday.io/project/159973-z80-mbc2-4ics-homemade-z80-computer
+for details)
 
-The original BIOS modules (from the Hackaday SD-S220718-R280819-v1.zip file)
-have been translated from 8080 Assembly language compatible with the DR RMAC
-assembler into Zilog Z80 mnemonics that can be assembled using the
+The original BIOS modules (extracted from the Hackaday microSD
+SD-S220718-R280819-v1.zip file)
+have been translated from the original RMAC-style 8080 Assembly language
+format into Zilog Z80 mnemonics that can be assembled using the
 Microsoft M80 Macro Assembler or (my preferred) Hector Peraza's ZSM4 Macro
-Assembler.
-
-The source-code for ZSM4 may be obtained from https://github.com/hperaza/ZSM4
-and I have included a working CP/M binary for ZSM4 version 4.1
+Assembler(2).
 
 Modification History (in reverse chronological order):
 ======================================================
@@ -30,7 +30,8 @@ original Intel 8080 sourcecode modules (.ASM files) and my translated
 sourcecode modules (.Z80 files).  Both the original and translated build
 files produce byte-identical BIOS images.  However, even using the
 original GENCPM.ORG configuration, I'm unable to get a byte-for-byte
-exact copy of the distributed banked system CPM3-128.SYS
+exact copy of the distributed banked system CPM3-128.SYS. Most likely
+this is due to differences in un-initialized data areas.
 
 Secondly, I have modified the Z80 sourcecode modules to -
 
@@ -51,15 +52,12 @@ variable @TEMPC.
 like BOOTSYS to load a replacement system image into the correct
 memory banks for testing.
 
-* Added a zero checksum vector size to invokations of the DPH macro
+* Added a zero checksum vector size to invocations of the DPH macro
 since all drives are permanently mounted - in the VDISK module.
 
 My modified Z80 sourcecode is in various .MAC modules and can be built
-into a system image by the BUILDZPR.SUB (which selects the ZPM3
+into a system image by the BUILDZPR.SUB submit file (which selects the ZPM3
 replacement BDOS routines).
-
-ZPM3 sourcecode can be obtained from the Tesseract RCPM+ archives in Volume
-93 at http://www.classiccmp.org/cpmarchives/cpm/mirrors/www.triton.vg/TesseractRCPM+Catalog.html#vol93
 
 The resulting system gives a 61KB TPA
 
@@ -112,7 +110,18 @@ If you wish to download all modules in a single convenient file then
 fetch the
 https://github.com/agn453/Z80-MBC2-master/blob/master/MBC2BIOS.LBR library
 and extract the contents to an empty directory using the CP/M NULU.COM utility
-and ```nulu d:MBC2BIOS.LBR -e *.*```
+with a command like ```nulu d:MBC2BIOS.LBR -e *.*``` from the CP/M prompt.
 
 All the files (and assembly listings) are in the bios directory.
+
+--
+(1) ZPM3 sourcecode can be obtained from the Tesseract RCPM+ archives
+in Volume 93 at
+http://www.classiccmp.org/cpmarchives/cpm/mirrors/www.triton.vg/TesseractRCPM+Catalog.html#vol93
+
+(2) The source-code for ZSM4 Z80/Z180/Z280 Macro Assembler may be obtained from
+https://github.com/hperaza/ZSM4
+and I have included a working CP/M binary for ZSM4 version 4.1 (ZSM4.COM)
+and the PDF documentation (ZSM4.PDF)
+
 
