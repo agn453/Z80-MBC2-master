@@ -1,4 +1,4 @@
-ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    1
+ZSM 4.1	Source file: VDISK    	12-Feb-2020  15:27:56	Page    1
 CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
 
                                 	.z80
@@ -58,7 +58,7 @@ CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
                                 	public  @dtbl
                                 
                                 				; DEFINE EXTERNAL LABELS:
-ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    2
+ZSM 4.1	Source file: VDISK    	12-Feb-2020  15:27:56	Page    2
 CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
 
                                 	extrn   @adrv,@rdrv
@@ -118,7 +118,7 @@ CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
                                 
                                 				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 1:
                                 				; 
-ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    3
+ZSM 4.1	Source file: VDISK    	12-Feb-2020  15:27:56	Page    3
 CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
 
   0023" 0253"                   	defw	hdwrt		; HARD DISK WRITE ROUTINE
@@ -178,7 +178,7 @@ CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
   0073" 0000                  + 	defw	0			; translate table address
   0075" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
   007B" 00 00 00              + 
-ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    4
+ZSM 4.1	Source file: VDISK    	12-Feb-2020  15:27:56	Page    4
 CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
 
   007E" 00                    + 	defb	0			; media flag
@@ -238,7 +238,7 @@ CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
                                 ; -----------------------------------------------------------------------------
                                 
                                 				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 6:
-ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    5
+ZSM 4.1	Source file: VDISK    	12-Feb-2020  15:27:56	Page    5
 CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
 
                                 				; 
@@ -298,7 +298,7 @@ CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
   0122"                         dph8:	dph     0,idehd$dpb0,0
   0122" 0000                  + 	defw	0			; translate table address
   0124" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
-ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    6
+ZSM 4.1	Source file: VDISK    	12-Feb-2020  15:27:56	Page    6
 CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
 
   012A" 00 00 00              + 
@@ -358,7 +358,7 @@ CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
                                 	
                                 ; -----------------------------------------------------------------------------
                                 
-ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    7
+ZSM 4.1	Source file: VDISK    	12-Feb-2020  15:27:56	Page    7
 CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
 
                                 				; EXTENDED DISK PARAMETER HEADER FOR DRIVE 11:
@@ -418,7 +418,7 @@ CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
                                 	
   01D1"                         dph13:	dph     0,idehd$dpb0,0
   01D1" 0000                  + 	defw	0			; translate table address
-ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    8
+ZSM 4.1	Source file: VDISK    	12-Feb-2020  15:27:56	Page    8
 CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
 
   01D3" 00 00 00 00 00 00     + 	defb	0,0,0,0,0,0,0,0,0	; BDOS Scratch area
@@ -478,7 +478,7 @@ CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
   0230" ( 0000 )              + ??001E:	  defs	  0		; checksum vector
                                 	
                                 ; -----------------------------------------------------------------------------
-ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page    9
+ZSM 4.1	Source file: VDISK    	12-Feb-2020  15:27:56	Page    9
 CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
 
                                 ;
@@ -538,7 +538,7 @@ CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
   000B' 8000                  + 	defw	??0028		; checksum size
   000D' 0001                  + 	defw	1		; offset for system tracks
   000F' 02 03                 + 	defb	??0029,??002A	; physical sector size shift and mask
-ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page   10
+ZSM 4.1	Source file: VDISK    	12-Feb-2020  15:27:56	Page   10
 CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
 
                                 
@@ -598,7 +598,7 @@ CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
                                 
   0252"                         lastdsk:
   0252" FF                      	defb	0ffh		; Last disk number (= ff after cold boot)
-ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page   11
+ZSM 4.1	Source file: VDISK    	12-Feb-2020  15:27:56	Page   11
 CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
 
                                 
@@ -658,7 +658,7 @@ CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
   026D" C3 002E'                	jp	bhdrd
                                 				; --------------------------
                                 	cseg			; This I/O part must be in the common bank
-ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page   12
+ZSM 4.1	Source file: VDISK    	12-Feb-2020  15:27:56	Page   12
 CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
 
                                 				; --------------------------
@@ -718,7 +718,7 @@ CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
                                 				; 
                                 				; Select @TRK host track
   0291"                         settrack:
-ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page   13
+ZSM 4.1	Source file: VDISK    	12-Feb-2020  15:27:56	Page   13
 CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
 
   0291" 3E 0A                   	ld	a, seltrck$opc	; Select SELTRACK opcode (IOS)
@@ -741,7 +741,7 @@ CP/M 3 MODULE FOR VIRTUAL DISKS ON SD - Z80-MBC2 (A040618)
   0000  =                       	end
 
 Errors: 0
-ZSM 4.1	Source file: VDISK    	22-Oct-2019  09:58:57	Page   14
+ZSM 4.1	Source file: VDISK    	12-Feb-2020  15:27:56	Page   14
 
 Macros:
 DPB                       DPH                       DTBL
@@ -780,4 +780,3 @@ SELSECT$OPC ...... 000B   SELTRCK$OPC ...... 000A   SERIAL$RX ........ 0001
 SERTX$OPC ........ 0001   SETDTS ........... 027D"  SETTRACK ......... 0291"
 STO$OPCD ......... 0001   SYSFLAG$OPC ...... 0083   TRUE ............. FFFF 
 WRTSECT$OPC ...... 000C   
-

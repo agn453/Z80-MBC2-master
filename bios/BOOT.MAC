@@ -382,10 +382,11 @@ fcb$nr:	defb	0,0,0
 signon$msg:
 	defb	cr,lf,'Z80-MBC2 128KB '
 	defb	'(Banked) CP/M V3.0'
+  ifdef zpm3
 	defb	' with ZPM3'
+  endif
 	defb	cr,lf,'Z80-MBC2 BIOS Modules: S200918, S210918-R170319, '
 	defb	'S220918-R180319, S290918,', cr,lf,' S170319'
 	defb	cr,lf,lf,0
 
 	end
-                                                                                                  

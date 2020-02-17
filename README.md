@@ -19,6 +19,18 @@ Assembler(2).
 Modification History (in reverse chronological order):
 ======================================================
 
+17-Feb-2020
+-----------
+
+Tidy up the build files.  BUILDDRI.SUB now builds a DRI3.SYS file from
+the Digital Research supplied Resident BDOS modules, and BUILDZPR.SUB
+produces ZPM3.SYS from Simeon Cran's ZPM3 replacement BDOS modules.
+
+Also included the source-code to the Z80-MBC2 version of XMODEM and
+AUTOEXEC.ASM (from the SD card src/CPM_3_Utils folder) and cleaned
+up <NUL>s and <CTRL-Z>s from the end of text files.
+
+
 22-Oct-2019
 -----------
 

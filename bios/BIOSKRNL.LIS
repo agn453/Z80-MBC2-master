@@ -1,4 +1,4 @@
-ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    1
+ZSM 4.1	Source file: BIOSKRNL 	12-Feb-2020  15:26:28	Page    1
 Root module of relocatable BIOS for CP/M 3.0
 
                                 	.z80
@@ -58,7 +58,7 @@ Root module of relocatable BIOS for CP/M 3.0
                                 	cseg			; GENCPM puts CSEG stuff in common memory
                                 
                                 
-ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    2
+ZSM 4.1	Source file: BIOSKRNL 	12-Feb-2020  15:26:28	Page    2
 Root module of relocatable BIOS for CP/M 3.0
 
                                 				; variables in system data page
@@ -118,7 +118,7 @@ Root module of relocatable BIOS for CP/M 3.0
                              C  					; enabled
                              C  
   0000  =                    C  baud$none		equ 0		; no baud rate associated
-ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    3
+ZSM 4.1	Source file: BIOSKRNL 	12-Feb-2020  15:26:28	Page    3
 Root module of relocatable BIOS for CP/M 3.0
 
                              C  					; with this device
@@ -178,7 +178,7 @@ Root module of relocatable BIOS for CP/M 3.0
   0036' C3 0182'                ?auxis:	jp	auxist		; return aux input status
   0039' C3 0116'                ?auxos:	jp	auxost		; return aux output status
   003C' C3 00E0'                ?dvtbl:	jp	devtbl		; return address of device def table
-ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    4
+ZSM 4.1	Source file: BIOSKRNL 	12-Feb-2020  15:26:28	Page    4
 Root module of relocatable BIOS for CP/M 3.0
 
   003F' C3 0000#                ?devin:	jp	?cinit		; change baud rate of device
@@ -238,7 +238,7 @@ Root module of relocatable BIOS for CP/M 3.0
   0017"                         d$init$loop:
   0017" C5                      	push	bc		; save remaining count and abs drive
   0018" 5E                      	ld	e,(hl)
-ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    5
+ZSM 4.1	Source file: BIOSKRNL 	12-Feb-2020  15:26:28	Page    5
 Root module of relocatable BIOS for CP/M 3.0
 
   0019" 23                      	inc	hl
@@ -298,7 +298,7 @@ Root module of relocatable BIOS for CP/M 3.0
                                 
   0086'                         set$jumps:
                                 
-ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    6
+ZSM 4.1	Source file: BIOSKRNL 	12-Feb-2020  15:26:28	Page    6
 Root module of relocatable BIOS for CP/M 3.0
 
                                 	 if	banked
@@ -358,7 +358,7 @@ Root module of relocatable BIOS for CP/M 3.0
   00F0' 18 03                   	jr	out$scan
                                 
                                 
-ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    7
+ZSM 4.1	Source file: BIOSKRNL 	12-Feb-2020  15:26:28	Page    7
 Root module of relocatable BIOS for CP/M 3.0
 
                                 				; LIST
@@ -418,7 +418,7 @@ Root module of relocatable BIOS for CP/M 3.0
                                 				; 		are ready.
                                 
   011B'                         listst:
-ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    8
+ZSM 4.1	Source file: BIOSKRNL 	12-Feb-2020  15:26:28	Page    8
 Root module of relocatable BIOS for CP/M 3.0
 
   011B' 2A 0000#                	ld	hl,(@lovec)	; get list output bit vector
@@ -478,7 +478,7 @@ Root module of relocatable BIOS for CP/M 3.0
   0163' C5                      	push	bc
   0164' E5                      	push	hl
   0165' CD 0000#                	call	?cist
-ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page    9
+ZSM 4.1	Source file: BIOSKRNL 	12-Feb-2020  15:26:28	Page    9
 Root module of relocatable BIOS for CP/M 3.0
 
   0168' E1                      	pop	hl
@@ -538,7 +538,7 @@ Root module of relocatable BIOS for CP/M 3.0
   0191' B5                      	or	l		; see if any more selected devices
   0192' 20 F3                   	jr	nz,cis$next
   0194' AF                      	xor	a		; all selected were not ready, return false
-ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page   10
+ZSM 4.1	Source file: BIOSKRNL 	12-Feb-2020  15:26:28	Page   10
 Root module of relocatable BIOS for CP/M 3.0
 
   0195' C9                      	ret
@@ -598,7 +598,7 @@ Root module of relocatable BIOS for CP/M 3.0
   01BB' 28 09                   	jr	z,pmsg$exit
   01BD' 4F                      	ld	c,a
   01BE' E5                      	push	hl
-ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page   11
+ZSM 4.1	Source file: BIOSKRNL 	12-Feb-2020  15:26:28	Page   11
 Root module of relocatable BIOS for CP/M 3.0
 
   01BF' CD 000C'                	call	?cono
@@ -658,7 +658,7 @@ Root module of relocatable BIOS for CP/M 3.0
   020A' CD 01B7'                	call	?pmsg		; track header
   020D' 2A 00E8"                	ld	hl,(@trk)
   0210' CD 01C9'                	call	?pdec		; track number
-ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page   12
+ZSM 4.1	Source file: BIOSKRNL 	12-Feb-2020  15:26:28	Page   12
 Root module of relocatable BIOS for CP/M 3.0
 
   0213' 21 00E1"                	ld	hl,sector$msg
@@ -718,7 +718,7 @@ Root module of relocatable BIOS for CP/M 3.0
   0054" E5                      	push	hl
   0055" EB                      	ex	de,hl		; put pointer in stack & <DE>
   0056" 21 FFFE                 	ld	hl,-2
-ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page   13
+ZSM 4.1	Source file: BIOSKRNL 	12-Feb-2020  15:26:28	Page   13
 Root module of relocatable BIOS for CP/M 3.0
 
   0059" 19                      	add	hl,de
@@ -778,7 +778,7 @@ Root module of relocatable BIOS for CP/M 3.0
                                 				; 		in @DBNK for future disk data
                                 				; 		transfers.
                                 
-ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page   14
+ZSM 4.1	Source file: BIOSKRNL 	12-Feb-2020  15:26:28	Page   14
 Root module of relocatable BIOS for CP/M 3.0
 
   007F"                         setbnk:
@@ -838,7 +838,7 @@ Root module of relocatable BIOS for CP/M 3.0
   00A9" 11 0000#                	ld	de,@dtbl
   00AC" 19                      	add	hl,de		; make address of table entry
   00AD" 7E                      	ld	a,(hl)
-ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page   15
+ZSM 4.1	Source file: BIOSKRNL 	12-Feb-2020  15:26:28	Page   15
 Root module of relocatable BIOS for CP/M 3.0
 
   00AE" 23                      	inc	hl
@@ -898,7 +898,7 @@ Root module of relocatable BIOS for CP/M 3.0
   00E7" ( 0001 )                @rdrv:	defs	1		; controller relative disk drive
   00E8" ( 0002 )                @trk:	defs	2		; current track number
   00EA" ( 0002 )                @sect:	defs	2		; current sector number
-ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page   16
+ZSM 4.1	Source file: BIOSKRNL 	12-Feb-2020  15:26:28	Page   16
 Root module of relocatable BIOS for CP/M 3.0
 
   00EC" ( 0002 )                @dma:	defs	2		; current DMA address
@@ -914,7 +914,7 @@ Root module of relocatable BIOS for CP/M 3.0
   0000  =                       	end
 
 Errors: 0
-ZSM 4.1	Source file: BIOSKRNL 	22-Oct-2019  09:57:33	Page   17
+ZSM 4.1	Source file: BIOSKRNL 	12-Feb-2020  15:26:28	Page   17
 
 Symbols:
 ?AUXI ............ 0015'P ?AUXIS ........... 0036'P ?AUXO ............ 0012'P
@@ -971,4 +971,3 @@ SETDMA ........... 0078"  SETSEC ........... 0073"  SETTRK ........... 006E"
 STOPLOOP ......... 01DA'  TABLE10 .......... 01EE'  TRACK$MSG ........ 00DC"
 TRUE ............. FFFF   WBOOT ............ 0074'  WRITE ............ 00A3"
 XOFFLIST ......... 0225'  
-

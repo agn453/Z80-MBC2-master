@@ -1,4 +1,4 @@
-ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    1
+ZSM 4.1	Source file: CHARIO   	12-Feb-2020  15:27:15	Page    1
 CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
 
                                 	.z80
@@ -58,7 +58,7 @@ CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
                                 	 endif
                                 	extrn ?pmsg
                                 
-ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    2
+ZSM 4.1	Source file: CHARIO   	12-Feb-2020  15:27:15	Page    2
 CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
 
                              C  	include modebaud.lib	; EQUATES FOR MODE BYTE BIT FIELDS
@@ -118,7 +118,7 @@ CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
                                 				; WILL START OFF IN COMMON MEMORY FOR BANKED OR NON-BANKED SYSTEMS:
                                 				; --------------------------
                                 	cseg
-ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    3
+ZSM 4.1	Source file: CHARIO   	12-Feb-2020  15:27:15	Page    3
 CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
 
                                 				; --------------------------
@@ -178,7 +178,7 @@ CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
                                 	ret			; AND RETURN...
                                 	 endif
                                 
-ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    4
+ZSM 4.1	Source file: CHARIO   	12-Feb-2020  15:27:15	Page    4
 CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
 
                                 
@@ -238,7 +238,7 @@ CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
   0039' 0116'                   	defw	null$ci		; DEVICE 9 INPUT
   003B' 0116'                   	defw	null$ci		; DEVICE 10 INPUT
   003D' 0116'                   	defw	null$ci		; DEVICE 11 INPUT
-ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    5
+ZSM 4.1	Source file: CHARIO   	12-Feb-2020  15:27:15	Page    5
 CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
 
   003F' 0116'                   	defw	null$ci		; DEVICE 12 INPUT
@@ -298,7 +298,7 @@ CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
   0089' 0113'                   	defw	null$cist	; DEVICE 14 INPUT STATUS
   008B' 0113'                   	defw	null$cist	; DEVICE 15 INPUT STATUS
                                 
-ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    6
+ZSM 4.1	Source file: CHARIO   	12-Feb-2020  15:27:15	Page    6
 CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
 
                                 
@@ -358,7 +358,7 @@ CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
                                 
   00BF'                         cinit0:				; DEVICE 0 INITIALIZATION (Z80-MBC2) 
   00BF' C9                      	ret			; Nothing to do
-ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    7
+ZSM 4.1	Source file: CHARIO   	12-Feb-2020  15:27:15	Page    7
 CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
 
                                 
@@ -418,7 +418,7 @@ CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
   00ED' FE FF                   	cp	0ffh		; Is = $FF ($FF from UART = no char)?
   00EF' 28 08                   	jr	z,getchr	; Yes, jump to read a char
   00F1' F5                      	push	af		; No, InChrBuf = $FF (clear buffer)
-ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    8
+ZSM 4.1	Source file: CHARIO   	12-Feb-2020  15:27:15	Page    8
 CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
 
   00F2' 3E FF                   	ld	a, 0ffh
@@ -478,7 +478,7 @@ CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
                                 				; ;;;; CHRTBL
                                 				; CHARACTER DEVICE TABLE
                                 				; --------------------------
-ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page    9
+ZSM 4.1	Source file: CHARIO   	12-Feb-2020  15:27:15	Page    9
 CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
 
                                 	cseg			; MUST RESIDE IN COMMON MEMORY
@@ -503,7 +503,7 @@ CP/M 3 MODULE FOR CHARACTER I/O HANDLING - Z80-MBC2 (A040618)
   0000  =                       	end
 
 Errors: 0
-ZSM 4.1	Source file: CHARIO   	22-Oct-2019  09:58:17	Page   10
+ZSM 4.1	Source file: CHARIO   	12-Feb-2020  15:27:15	Page   10
 
 Symbols:
 ?CI .............. 0024'P ?CINIT ........... 0000'P ?CIST ............ 006A'P
@@ -529,4 +529,3 @@ RDSECT$OPC ....... 0086   SDMOUNT$OPC ...... 0087   SELDISK$OPC ...... 0009
 SELSECT$OPC ...... 000B   SELTRCK$OPC ...... 000A   SERIAL$RX ........ 0001 
 SERTX$OPC ........ 0001   STO$OPCD ......... 0001   SYSFLAG$OPC ...... 0083 
 TRUE ............. FFFF   WRTSECT$OPC ...... 000C   
-

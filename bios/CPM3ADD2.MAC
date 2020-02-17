@@ -662,4 +662,3 @@ buffer:	defs	17
 objend:	defw	$
 ;
 	end
-                

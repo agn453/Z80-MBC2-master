@@ -377,4 +377,3 @@ signon$msg:
 	defb	cr,lf,lf,0
 
 	end
-                 

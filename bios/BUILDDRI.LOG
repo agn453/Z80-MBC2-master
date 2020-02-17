@@ -2,46 +2,45 @@
 H>;
 H>DATE
 A:DATE     COM
-Wed 12/02/2020 15:26:24
+Wed 12/02/2020 15:40:35
 H>;
-H>; Assemble the modified Z80 translated source-code versions (.MAC sources)
-H>; (The ZPM3 define causes the boot sign-on to include "with ZPM3")
-H>ZSM4 BIOSKRNL,BIOSKRNL.LIS=BIOSKRNL
+H>; Assemble latest source-code versions (.MAC files)
+H>ZSM4 BIOSKRNL,BIOSKRNL.LST=BIOSKRNL
 H:ZSM4     COM
 Z80/Z180/Z280 Macro-Assembler V4.1
 
 Errors: 0
 Finished.
 
-H>ZSM4 BOOT,BOOT.LIS=BOOT/DZPM3=1
+H>ZSM4 BOOT,BOOT.LST=BOOT
 H:ZSM4     COM
 Z80/Z180/Z280 Macro-Assembler V4.1
 
 Errors: 0
 Finished.
 
-H>ZSM4 CHARIO,CHARIO.LIS=CHARIO
+H>ZSM4 CHARIO,CHARIO.LST=CHARIO
 H:ZSM4     COM
 Z80/Z180/Z280 Macro-Assembler V4.1
 
 Errors: 0
 Finished.
 
-H>ZSM4 MOVE,MOVE.LIS=MOVE
+H>ZSM4 MOVE,MOVE.LST=MOVE
 H:ZSM4     COM
 Z80/Z180/Z280 Macro-Assembler V4.1
 
 Errors: 0
 Finished.
 
-H>ZSM4 SCB,SCB.LIS=SCB
+H>ZSM4 SCB,SCB.LST=SCB
 H:ZSM4     COM
 Z80/Z180/Z280 Macro-Assembler V4.1
 
 Errors: 0
 Finished.
 
-H>ZSM4 VDISK,VDISK.LIS=VDISK
+H>ZSM4 VDISK,VDISK.LST=VDISK
 H:ZSM4     COM
 Z80/Z180/Z280 Macro-Assembler V4.1
 
@@ -49,14 +48,39 @@ Errors: 0
 Finished.
 
 H>;
-H>ZSM4 LDRBIOS,LDRBIOS.LIS=LDRBIOS
+H>ZSM4 LDRBIOS,LDRBIOS.LST=LDRBIOS
 H:ZSM4     COM
 Z80/Z180/Z280 Macro-Assembler V4.1
 
 Errors: 0
 Finished.
 
-H>ZSM4 TESTLDR,TESTLDR.LIS=CPMLDR3/DTEST=1
+H>ZSM4 CPMLDR3,CPMLDR3.LST=CPMLDR3
+H:ZSM4     COM
+Z80/Z180/Z280 Macro-Assembler V4.1
+
+Errors: 0
+Finished.
+
+H>LINK CPMLDR3=CPMLDR3,LDRBIOS
+A:LINK     COM
+LINK 1.31
+
+RBASE    0100   CLOOP    0134   $EXECU   015F   LOAD     0173   
+LOOP     017A   SETDMA   018F   READ$P   0195   ERROR    01A2   
+BREAK    01A9   CPMFCB   01AB   OPENER   01CF   READER   01FA   
+SIGNON   0232   STACKB   0281   MEM$TO   0281   RES$LE   0282   
+BANK$T   0283   BANK$L   0284   OSENTR   0285   BDOS     028D   
+BDOSE    028D   
+
+ABSOLUTE     0000
+CODE SIZE    1382 (0100-1481)
+DATA SIZE    0000
+COMMON SIZE  0000
+USE FACTOR     24
+
+H>;
+H>ZSM4 TESTLDR,TESTLDR.LST=CPMLDR3/DTEST=1
 H:ZSM4     COM
 Z80/Z180/Z280 Macro-Assembler V4.1
 
@@ -81,44 +105,45 @@ COMMON SIZE  0000
 USE FACTOR     24
 
 H>;
+H>; Select standard DRI CP/M BDOS modules
+H>DRI-CPM3.SUB
+H:DRI-CPM3 SUB
+A:SUBMIT   COM
+
+H>; Select the DRI versions of the Banked BDOS (CP/M-Plus with Y2K patches)
+H>PIP BNKBDOS3.SPR[V]=BNKBDOS3.SPD
+A:PIP      COM
+
+H>PIP RESBDOS3.SPR[V]=RESBDOS3.SPD
+A:PIP      COM
+
+H>;
 H>; Make banked memory page relocatable of BIOS for GENCPM to use
-H>LINK BNKBIOS3[B]=BIOSKRNL,BOOT,CHARIO,MOVE,SCB,VDISK
+H>LINK BNKBIOS3[B]=BIOSKRNL,SCB,BOOT,CHARIO,MOVE,VDISK
 A:LINK     COM
 LINK 1.31
 
 @COVEC   FE24   @CIVEC   FE22   @AOVEC   FE28   @AIVEC   FE26   
 @LOVEC   FE2A   @MXTPA   FE62   @BNKBF   FE35   @CTBL    0493   
-@DTBL    09B6   @ADRV    06E6   @RDRV    06E7   @TRK     06E8   
+@DTBL    09AC   @ADRV    06E6   @RDRV    06E7   @TRK     06E8   
 @SECT    06EA   @DMA     06EC   @DBNK    06EF   @CNT     06EE   
-@CBNK    0235   ZPM3     0001   @SEC     FE5C   @MIN     FE5B   
-@HOUR    FE5A   @DATE    FE58   @TEMPC   0323   @CRDMA   FE3C   
-@CRDSK   FE3E   @VINFO   FE3F   @RESEL   FE41   @FX      FE43   
-@USRCD   FE44   @MLTIO   FE4A   @ERMDE   FE4B   @ERDSK   FE51   
-@MEDIA   FE54   @BFLGS   FE57   
+@CBNK    0235   @CRDMA   FE3C   @CRDSK   FE3E   @VINFO   FE3F   
+@RESEL   FE41   @FX      FE43   @USRCD   FE44   @MLTIO   FE4A   
+@ERMDE   FE4B   @ERDSK   FE51   @MEDIA   FE54   @BFLGS   FE57   
+@DATE    FE58   @HOUR    FE5A   @MIN     FE5B   @SEC     FE5C   
+@TEMPC   0323   
 
 ABSOLUTE     0000
 CODE SIZE    05D9 (0000-05D8)
-DATA SIZE    0432 (0600-0A31)
+DATA SIZE    0428 (0600-0A27)
 COMMON SIZE  0000
 USE FACTOR     23
 
 H>;
-H>; Use Simeon Cran's ZPM3 replacement BDOS routines
-H>USE-ZPM3.SUB
-H:USE-ZPM3 SUB
-A:SUBMIT   COM
-
-H>; Select the ZPM3 Banked BDOS modules (Simeon Cran's Z80 CP/M3 replacement)
-H>PIP BNKBDOS3.SPR[V]=BNKBDOS3.SPZ
-A:PIP      COM
-
-H>PIP RESBDOS3.SPR[V]=RESBDOS3.SPZ
-A:PIP      COM
-
-H>;
-H>; Create the TEST.SYS file
+H>; Create the CPM3BANK.SYS file using the original default GENCPM.DRI
+H>; This uses the load-map fixed GENCPM3.COM version.
 H>ERA GENCPM.DAT
-H>PIP GENCPM.DAT=GENCPM.ZPR
+H>PIP GENCPM.DAT=GENCPM.DRI
 A:PIP      COM
 
 H>GENCPM3  
@@ -133,7 +158,7 @@ Default base is Hex, precede entry with # for decimal
 
 Use GENCPM.DAT for defaults (Y) ? 
 
-Create a new GENCPM.DAT file (N) ? 
+Create a new GENCPM.DAT file (N) ? y
 
 Display Load Map at Cold Boot (Y) ? 
 
@@ -396,22 +421,13 @@ Accept new buffer definitions (Y) ?
  BNKBDOS3 SPR  2800H  2E00H
 
 *** CP/M 3.0 SYSTEM GENERATION DONE ***
-H>ERA TEST.SYS
-H>REN TEST.SYS=CPM3.SYS
-H>PIP ZPM3.SYS=TEST.SYS
-A:PIP      COM
-
-H>;
-H>; Make TEST.COM system loader containing TEST.SYS
-H>; (this doesn't work on distributed CPM3-128.SYS
-H>; since XMOVE isn't implemented in it)
-H>PIP TEST.COM=BOOTSYS.BIN,TEST.SYS
-A:PIP      COM
-
+H>ERA DRI3.SYS
+No File
+H>REN DRI3.SYS=CPM3.SYS
 H>;
 H>DATE
 A:DATE     COM
-Wed 12/02/2020 15:32:32
+Wed 12/02/2020 15:48:33
 H>;
 H>; All done - end of log file
 H>PUT CONSOLE TO CONSOLE

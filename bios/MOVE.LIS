@@ -1,4 +1,4 @@
-ZSM 4.1	Source file: MOVE     	22-Oct-2019  09:58:37	Page    1
+ZSM 4.1	Source file: MOVE     	12-Feb-2020  15:27:37	Page    1
 bank & move module for CP/M3 linked BIOS
 
                                 	.z80
@@ -58,7 +58,7 @@ bank & move module for CP/M3 linked BIOS
   000B  =                       selsect$opc equ	00bh		; SELSECT opcode
   000C  =                       wrtsect$opc equ	00ch		; WRITESECT opcode
   000D  =                       setbank$opc equ	00dh		; SETBANK opcode
-ZSM 4.1	Source file: MOVE     	22-Oct-2019  09:58:37	Page    2
+ZSM 4.1	Source file: MOVE     	12-Feb-2020  15:27:37	Page    2
 bank & move module for CP/M3 linked BIOS
 
   0083  =                       sysflag$opc equ	083h		; SYSFLAG opcode
@@ -118,7 +118,7 @@ bank & move module for CP/M3 linked BIOS
   00BF' E1                      	pop	hl
   00C0' EB                      	ex	de,hl
   00C1' F1                      	pop	af
-ZSM 4.1	Source file: MOVE     	22-Oct-2019  09:58:37	Page    3
+ZSM 4.1	Source file: MOVE     	12-Feb-2020  15:27:37	Page    3
 bank & move module for CP/M3 linked BIOS
 
   00C2' CD 0000#                	call	?bnksl		; Restore saved bank
@@ -154,7 +154,7 @@ bank & move module for CP/M3 linked BIOS
   0000  =                       	end
 
 Errors: 0
-ZSM 4.1	Source file: MOVE     	22-Oct-2019  09:58:37	Page    4
+ZSM 4.1	Source file: MOVE     	12-Feb-2020  15:27:37	Page    4
 
 Symbols:
 ?BANK ............ 00CF'P ?BNKSL ........... 0000#  ?MOVE ............ 008D'P
@@ -167,4 +167,3 @@ SERIAL$RX ........ 0001   SERTX$OPC ........ 0001   SETBANK$OPC ...... 000D
 STO$OPCD ......... 0001   SYSFLAG$OPC ...... 0083   TRUE ............. FFFF 
 WRTSECT$OPC ...... 000C   XMOV$BUF ......... 000D'  XMOV$DST ......... 000C'
 XMOV$FLAG ........ 000A'  XMOV$SRC ......... 000B'  
-

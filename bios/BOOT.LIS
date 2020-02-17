@@ -1,4 +1,4 @@
-ZSM 4.1	Source file: BOOT     	22-Oct-2019  09:58:01	Page    1
+ZSM 4.1	Source file: BOOT     	12-Feb-2020  15:26:57	Page    1
 BOOT LOADER MODULE FOR CP/M 3.0 - Z80-MBC2 (A040618)
 
                                 	.z80
@@ -58,7 +58,7 @@ BOOT LOADER MODULE FOR CP/M 3.0 - Z80-MBC2 (A040618)
                                 ;
                                 ; -----------------------------------------------------------------------------
                                 
-ZSM 4.1	Source file: BOOT     	22-Oct-2019  09:58:01	Page    2
+ZSM 4.1	Source file: BOOT     	12-Feb-2020  15:26:57	Page    2
 BOOT LOADER MODULE FOR CP/M 3.0 - Z80-MBC2 (A040618)
 
   0000  =                       exc$wr$opcd equ	000h		; Address of the EXECUTE WRITE OPCODE write port
@@ -118,7 +118,7 @@ BOOT LOADER MODULE FOR CP/M 3.0 - Z80-MBC2 (A040618)
   0000' AF                      	xor	a		; ZERO EXTENT
   0001' 32 012F'                	ld	(ccp$fcb+15),a
   0004' 21 0000                 	ld	hl,0		; START AT BEGINNING OF FILE
-ZSM 4.1	Source file: BOOT     	22-Oct-2019  09:58:01	Page    3
+ZSM 4.1	Source file: BOOT     	12-Feb-2020  15:26:57	Page    3
 BOOT LOADER MODULE FOR CP/M 3.0 - Z80-MBC2 (A040618)
 
   0007' 22 0140'                	ld	(fcb$nr),hl
@@ -178,7 +178,7 @@ BOOT LOADER MODULE FOR CP/M 3.0 - Z80-MBC2 (A040618)
   0033' 3E 83                   	ld	a, sysflag$opc	; Select SYSFLAG opcode
   0035' D3 01                   	out	(sto$opcd),a
   0037' DB 00                   	in	a,(exc$rd$opcd)	; A = SYSFLAG
-ZSM 4.1	Source file: BOOT     	22-Oct-2019  09:58:01	Page    4
+ZSM 4.1	Source file: BOOT     	12-Feb-2020  15:26:57	Page    4
 BOOT LOADER MODULE FOR CP/M 3.0 - Z80-MBC2 (A040618)
 
   0039' E6 02                   	and	02h		; Isolate the RTC flag bit
@@ -238,7 +238,7 @@ BOOT LOADER MODULE FOR CP/M 3.0 - Z80-MBC2 (A040618)
   0080' C6 05                   	add	a,5		; Add leap years from 31-12-1977 to 31-12-1999
   0082' 4F                      	ld	c, a		; C = elapsed_leap_years = (((RTCYEAR) - 1) / 4
   0083' AF                      	xor	a		; A = 0
-ZSM 4.1	Source file: BOOT     	22-Oct-2019  09:58:01	Page    5
+ZSM 4.1	Source file: BOOT     	12-Feb-2020  15:26:57	Page    5
 BOOT LOADER MODULE FOR CP/M 3.0 - Z80-MBC2 (A040618)
 
   0084' 57                      	ld	d, a		; D = 0
@@ -298,7 +298,7 @@ BOOT LOADER MODULE FOR CP/M 3.0 - Z80-MBC2 (A040618)
                                 ; Out: HL = result
                                 ;
   00C7'                         mult16:	
-ZSM 4.1	Source file: BOOT     	22-Oct-2019  09:58:01	Page    6
+ZSM 4.1	Source file: BOOT     	12-Feb-2020  15:26:57	Page    6
 BOOT LOADER MODULE FOR CP/M 3.0 - Z80-MBC2 (A040618)
 
   00C7' 78                      	ld	a,  b
@@ -358,7 +358,7 @@ BOOT LOADER MODULE FOR CP/M 3.0 - Z80-MBC2 (A040618)
                                 	 endif
                                 
                                 				; CP/M BDOS FUNCTION INTERFACES
-ZSM 4.1	Source file: BOOT     	22-Oct-2019  09:58:01	Page    7
+ZSM 4.1	Source file: BOOT     	12-Feb-2020  15:26:57	Page    7
 BOOT LOADER MODULE FOR CP/M 3.0 - Z80-MBC2 (A040618)
 
                                 
@@ -413,14 +413,16 @@ BOOT LOADER MODULE FOR CP/M 3.0 - Z80-MBC2 (A040618)
   0020" 28 42 61 6E 6B 65       	defb	'(Banked) CP/M V3.0'
   0026" 64 29 20 43 50 2F       
   002C" 4D 20 56 33 2E 30       
+                                  if zpm3
   0032" 20 77 69 74 68 20       	defb	' with ZPM3'
   0038" 5A 50 4D 33             
+                                  endif
   003C" 0D 0A 5A 38 30 2D       	defb	cr,lf,'Z80-MBC2 BIOS Modules: S200918, S210918-R170319, '
-  0042" 4D 42 43 32 20 42       
-  0048" 49 4F 53 20 4D 6F       
-ZSM 4.1	Source file: BOOT     	22-Oct-2019  09:58:01	Page    8
+ZSM 4.1	Source file: BOOT     	12-Feb-2020  15:26:57	Page    8
 BOOT LOADER MODULE FOR CP/M 3.0 - Z80-MBC2 (A040618)
 
+  0042" 4D 42 43 32 20 42       
+  0048" 49 4F 53 20 4D 6F       
   004E" 64 75 6C 65 73 3A       
   0054" 20 53 32 30 30 39       
   005A" 31 38 2C 20 53 32       
@@ -438,7 +440,7 @@ BOOT LOADER MODULE FOR CP/M 3.0 - Z80-MBC2 (A040618)
   0000  =                       	end
 
 Errors: 0
-ZSM 4.1	Source file: BOOT     	22-Oct-2019  09:58:01	Page    9
+ZSM 4.1	Source file: BOOT     	12-Feb-2020  15:26:57	Page    9
 
 Symbols:
 ?BNKSL ........... 0000#  ?CONIN ........... 0000#  ?INIT ............ 0000"P
@@ -461,5 +463,5 @@ SDMOUNT$OPC ...... 0087   SELDISK$OPC ...... 0009   SELSECT$OPC ...... 000B
 SELTRCK$OPC ...... 000A   SERIAL$RX ........ 0001   SERTX$OPC ........ 0001 
 SETDMA ........... 00F2'  SETMULTI ......... 00F6'  SIGNON$MSG ....... 000F"
 STO$OPCD ......... 0001   SYSFLAG$OPC ...... 0083   TIMEEND .......... 00B5'
-TRUE ............. FFFF   WRTSECT$OPC ...... 000C   
-
+TRUE ............. FFFF   WRTSECT$OPC ...... 000C   ZPM3 ............. 0001 P
+

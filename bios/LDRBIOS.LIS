@@ -1,4 +1,4 @@
-ZSM 4.1	Source file: LDRBIOS  	22-Oct-2019  09:59:29	Page    1
+ZSM 4.1	Source file: LDRBIOS  	12-Feb-2020  15:28:28	Page    1
 CP/M 3 LOADER BIOS for Z80-MBC2 (A040618)
 
                                 	.z80
@@ -58,7 +58,7 @@ CP/M 3 LOADER BIOS for Z80-MBC2 (A040618)
                                 
   0000' C3 00A9'                	jp	boot		; <----- INITIAL ENTRY ON COLD START
   0003' C3 00A8'                	jp	wboot		; REENTRY ON PROGRAM EXIT, WARM START
-ZSM 4.1	Source file: LDRBIOS  	22-Oct-2019  09:59:29	Page    2
+ZSM 4.1	Source file: LDRBIOS  	12-Feb-2020  15:28:28	Page    2
 CP/M 3 LOADER BIOS for Z80-MBC2 (A040618)
 
   0006' C3 0063'                	jp	const		; RETURN CONSOLE INPUT STATUS
@@ -118,7 +118,7 @@ CP/M 3 LOADER BIOS for Z80-MBC2 (A040618)
                                 
   006B'                         devtbl:	
   006B' C9                      	ret			; ROUTINE HAS NO FUNCTION IN LOADER BIOS:
-ZSM 4.1	Source file: LDRBIOS  	22-Oct-2019  09:59:29	Page    3
+ZSM 4.1	Source file: LDRBIOS  	12-Feb-2020  15:28:28	Page    3
 CP/M 3 LOADER BIOS for Z80-MBC2 (A040618)
 
                                 
@@ -178,7 +178,7 @@ CP/M 3 LOADER BIOS for Z80-MBC2 (A040618)
   008F' ED 43 0128'             	ld (@trk),bc		; ROUTINE SETS TRACK TO ACCESS ON NEXT READ
   0093' C9                      	ret
                                 	
-ZSM 4.1	Source file: LDRBIOS  	22-Oct-2019  09:59:29	Page    4
+ZSM 4.1	Source file: LDRBIOS  	12-Feb-2020  15:28:28	Page    4
 CP/M 3 LOADER BIOS for Z80-MBC2 (A040618)
 
   0094'                         setsec:	
@@ -238,7 +238,7 @@ CP/M 3 LOADER BIOS for Z80-MBC2 (A040618)
   00BD' D3 00                   	out	(exc$wr$opcd),a
   00BF' 32 00F5'                	ld	(lastdsk),a	; Update last disk number        
                                 				; 
-ZSM 4.1	Source file: LDRBIOS  	22-Oct-2019  09:59:29	Page    5
+ZSM 4.1	Source file: LDRBIOS  	12-Feb-2020  15:28:28	Page    5
 CP/M 3 LOADER BIOS for Z80-MBC2 (A040618)
 
                                 				; Select @TRK host track
@@ -298,7 +298,7 @@ CP/M 3 LOADER BIOS for Z80-MBC2 (A040618)
   00FC' D3 01                   	out	(sto$opcd),a	; Write the opcode
   00FE' 7E                      	ld	a,(hl)		; A = (HL) = current char to print
   00FF' D3 00                   	out	(exc$wr$opcd),a	; Print A
-ZSM 4.1	Source file: LDRBIOS  	22-Oct-2019  09:59:29	Page    6
+ZSM 4.1	Source file: LDRBIOS  	12-Feb-2020  15:28:28	Page    6
 CP/M 3 LOADER BIOS for Z80-MBC2 (A040618)
 
   0101' 23                      	inc	hl		; Increment character pointer
@@ -358,7 +358,7 @@ CP/M 3 LOADER BIOS for Z80-MBC2 (A040618)
                                 				; Bytes per sector, num sec, num trk, block size, dir entries, res trk, HD 
                                 	
   0171'                         hd$dpb:	dpb     512,32,512,4096,512,1,8000h
-ZSM 4.1	Source file: LDRBIOS  	22-Oct-2019  09:59:29	Page    7
+ZSM 4.1	Source file: LDRBIOS  	12-Feb-2020  15:28:28	Page    7
 CP/M 3 LOADER BIOS for Z80-MBC2 (A040618)
 
   0171' 0080                  + 	defw	??0000		; Number of 128 byte records per track
@@ -405,7 +405,7 @@ CP/M 3 LOADER BIOS for Z80-MBC2 (A040618)
   0000  =                       	end
 
 Errors: 0
-ZSM 4.1	Source file: LDRBIOS  	22-Oct-2019  09:59:29	Page    8
+ZSM 4.1	Source file: LDRBIOS  	12-Feb-2020  15:28:28	Page    8
 
 Macros:
 DPB                       DPH                       DTBL
@@ -440,4 +440,3 @@ SETSEC ........... 0094'  SETTRACK ......... 00C2'  SETTRK ........... 008F'
 STO$OPCD ......... 0001   SYSFLAG$OPC ...... 0083   TRUE ............. FFFF 
 WBOOT ............ 00A8'  WRITE ............ 00A6'  WRTSECT$OPC ...... 000C 
 
-

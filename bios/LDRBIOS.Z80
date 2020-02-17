@@ -362,4 +362,3 @@ alv:	defs	1000		; SPACE FOR DOUBLE BIT ALLOCATION VECTORS
 csv:				; NO CHECKSUM VECTOR REQUIRED FOR A HDISK
 
 	end
-                                                                                                                

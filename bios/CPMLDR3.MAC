@@ -2083,5 +2083,3 @@ move$out equ	movef
 move$tpa equ	movef
 
 	end
-pg+48	; 16. sector translate
-movef	equ	bios$pg+75	; 25.

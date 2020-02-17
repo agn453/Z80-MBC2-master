@@ -1,613 +1,0 @@
-
-H>;
-H>DATE
-A:DATE     COM
-Tue 22/10/2019 21:37:02
-H>;
-H>; Assemble and cross reference the original RMAC 8080 source-code version
-H>RMAC BIOSKRNL
-A:RMAC     COM
-CP/M RMAC ASSEM 1.1
-024A
-00BH USE FACTOR
-END OF ASSEMBLY
-
-H>XREF BIOSKRNL
-A:XREF     COM
-XREF 1.3
-
-H>ERA BIOSKRNL.PRN
-H>RMAC BOOT
-A:RMAC     COM
-CP/M RMAC ASSEM 1.1
-01C6
-023H USE FACTOR
-END OF ASSEMBLY
-
-H>XREF BOOT
-A:XREF     COM
-XREF 1.3
-
-H>ERA BOOT.PRN
-H>RMAC CHARIO
-A:RMAC     COM
-CP/M RMAC ASSEM 1.1
-013D
-024H USE FACTOR
-END OF ASSEMBLY
-
-H>XREF CHARIO
-A:XREF     COM
-XREF 1.3
-
-H>ERA CHARIO.PRN
-H>RMAC MOVE
-A:RMAC     COM
-CP/M RMAC ASSEM 1.1
-000F
-020H USE FACTOR
-END OF ASSEMBLY
-
-H>XREF MOVE
-A:XREF     COM
-XREF 1.3
-
-H>ERA MOVE.PRN
-H>RMAC SCB
-A:RMAC     COM
-CP/M RMAC ASSEM 1.1
-0000
-001H USE FACTOR
-END OF ASSEMBLY
-
-H>XREF SCB
-A:XREF     COM
-XREF 1.3
-
-H>ERA SCB.PRN
-H>RMAC VDISK
-A:RMAC     COM
-CP/M RMAC ASSEM 1.1
-02AC
-033H USE FACTOR
-END OF ASSEMBLY
-
-H>XREF VDISK
-A:XREF     COM
-XREF 1.3
-
-H>ERA VDISK.PRN
-H>;
-H>; Build the replacement CPMLDR
-H>ERA CPMLDR3.PRN
-No File
-H>RMAC CPMLDR3
-A:RMAC     COM
-CP/M RMAC ASSEM 1.1
-0A00
-017H USE FACTOR
-END OF ASSEMBLY
-
-H>XREF CPMLDR3
-A:XREF     COM
-XREF 1.3
-
-H>ERA CPMLDR3.PRN
-H>;
-H>; Build the loader BIOS
-H>ERA LDRBIOS.PRN
-No File
-H>RMAC LDRBIOS
-A:RMAC     COM
-CP/M RMAC ASSEM 1.1
-0982
-033H USE FACTOR
-END OF ASSEMBLY
-
-H>XREF LDRBIOS
-A:XREF     COM
-XREF 1.3
-
-H>ERA LDRBIOS.PRN
-H>LINK CPMLDR3=CPMLDR3,LDRBIOS
-A:LINK     COM
-LINK 1.31
-
-ABSOLUTE     0000
-CODE SIZE    1382 (0100-1481)
-DATA SIZE    0000
-COMMON SIZE  0000
-USE FACTOR     20
-
-H>;
-H>; Make a BIOS image for binary comparison with Z80 source version
-H>LINK BIOS-ORG.BIN=BIOSKRNL,SCB,BOOT,CHARIO,MOVE,VDISK
-A:LINK     COM
-LINK 1.31
-
-@ADRV    0794   @RDRV    0795   @TRK     0796   @SECT    0798   
-@DMA     079A   @DBNK    079D   @CNT     079C   @CBNK    0349   
-@COVEC   FE24   @CIVEC   FE22   @AOVEC   FE28   @AIVEC   FE26   
-@LOVEC   FE2A   @MXTPA   FE62   @BNKBF   FE35   @CTBL    062A   
-@DTBL    09DD   @CRDMA   FE3C   @CRDSK   FE3E   @VINFO   FE3F   
-@RESEL   FE41   @FX      FE43   @USRCD   FE44   @MLTIO   FE4A   
-@ERMDE   FE4B   @ERDSK   FE51   @MEDIA   FE54   @BFLGS   FE57   
-@DATE    FE58   @HOUR    FE5A   @MIN     FE5B   @SEC     FE5C   
-
-ABSOLUTE     0000
-CODE SIZE    05A7 (0100-06A6)
-DATA SIZE    03B2 (06A7-0A58)
-COMMON SIZE  0000
-USE FACTOR     22
-
-H>;
-H>; Assemble Z80 translated source-code versions
-H>ZSM4 BIOSKRNL,BIOSKRNL.LST=BIOSKRNL.Z80
-A:ZSM4     COM
-Z80/Z180/Z280 Macro-Assembler V4.1
-
-Errors: 0
-Finished.
-
-H>ZSM4 BOOT,BOOT.LST=BOOT.Z80
-A:ZSM4     COM
-Z80/Z180/Z280 Macro-Assembler V4.1
-
-Errors: 0
-Finished.
-
-H>ZSM4 CHARIO,CHARIO.LST=CHARIO.Z80
-A:ZSM4     COM
-Z80/Z180/Z280 Macro-Assembler V4.1
-
-Errors: 0
-Finished.
-
-H>ZSM4 MOVE,MOVE.LST=MOVE.Z80
-A:ZSM4     COM
-Z80/Z180/Z280 Macro-Assembler V4.1
-
-Errors: 0
-Finished.
-
-H>ZSM4 SCB,SCB.LST=SCB.Z80
-A:ZSM4     COM
-Z80/Z180/Z280 Macro-Assembler V4.1
-
-Errors: 0
-Finished.
-
-H>ZSM4 VDISK,VDISK.LST=VDISK.Z80
-A:ZSM4     COM
-Z80/Z180/Z280 Macro-Assembler V4.1
-
-Errors: 0
-Finished.
-
-H>;
-H>ZSM4 LDRBIOS,LDRBIOS.LST=LDRBIOS.Z80
-A:ZSM4     COM
-Z80/Z180/Z280 Macro-Assembler V4.1
-
-Errors: 0
-Finished.
-
-H>ZSM4 TESTLDR,TESTLDR.LST=CPMLDR3/DTEST=1
-A:ZSM4     COM
-Z80/Z180/Z280 Macro-Assembler V4.1
-
-Errors: 0
-Finished.
-
-H>LINK TESTLDR=TESTLDR,LDRBIOS
-A:LINK     COM
-LINK 1.31
-
-TEST     0001   RBASE    0100   CLOOP    0134   $EXECU   015F   
-LOAD     0173   LOOP     017A   SETDMA   018F   READ$P   0195   
-ERROR    01A2   BREAK    01A9   CPMFCB   01AB   OPENER   01CF   
-READER   01FA   SIGNON   0232   STACKB   0281   MEM$TO   0281   
-RES$LE   0282   BANK$T   0283   BANK$L   0284   OSENTR   0285   
-BDOS     028D   BDOSE    028D   
-
-ABSOLUTE     0000
-CODE SIZE    1382 (0100-1481)
-DATA SIZE    0000
-COMMON SIZE  0000
-USE FACTOR     23
-
-H>;
-H>; Make a BIOS image for binary comparison
-H>LINK BIOS-Z80.BIN=BIOSKRNL,SCB,BOOT,CHARIO,MOVE,VDISK
-A:LINK     COM
-LINK 1.31
-
-@COVEC   FE24   @CIVEC   FE22   @AOVEC   FE28   @AIVEC   FE26   
-@LOVEC   FE2A   @MXTPA   FE62   @BNKBF   FE35   @CTBL    062A   
-@DTBL    09DD   @ADRV    0794   @RDRV    0795   @TRK     0796   
-@SECT    0798   @DMA     079A   @DBNK    079D   @CNT     079C   
-@CBNK    0349   @CRDMA   FE3C   @CRDSK   FE3E   @VINFO   FE3F   
-@RESEL   FE41   @FX      FE43   @USRCD   FE44   @MLTIO   FE4A   
-@ERMDE   FE4B   @ERDSK   FE51   @MEDIA   FE54   @BFLGS   FE57   
-@DATE    FE58   @HOUR    FE5A   @MIN     FE5B   @SEC     FE5C   
-
-ABSOLUTE     0000
-CODE SIZE    05A7 (0100-06A6)
-DATA SIZE    03B2 (06A7-0A58)
-COMMON SIZE  0000
-USE FACTOR     22
-
-H>;
-H>; Do the comparison of the original source build with
-H>; the converted Z80 source build - there should be NO differences
-H>BINCOM BIOS-ORG.BIN BIOS-Z80.BIN
-H:BINCOM   COM
-BINCOM - Binary Compare
-
-File 1:  BIOS-ORGBIN
-File 2:  BIOS-Z80BIN
-
-
-Number of bytes compared:   0980H
-Number of mismatches found: 0000H
-
-H>;
-H>; Select standard DRI CP/M BDOS modules
-H>DRI-CPM3.SUB
-H:DRI-CPM3 SUB
-A:SUBMIT   COM
-
-H>; Select the DRI versions of the Banked BDOS (CP/M-Plus with Y2K patches)
-H>PIP BNKBDOS3.SPR[V]=BNKBDOS3.SPD
-A:PIP      COM
-
-H>PIP RESBDOS3.SPR[V]=RESBDOS3.SPD
-A:PIP      COM
-
-H>;
-H>; Make banked memory page relocatable of BIOS for GENCPM to use
-H>LINK BNKBIOS3[B]=BIOSKRNL,SCB,BOOT,CHARIO,MOVE,VDISK
-A:LINK     COM
-LINK 1.31
-
-@COVEC   FE24   @CIVEC   FE22   @AOVEC   FE28   @AIVEC   FE26   
-@LOVEC   FE2A   @MXTPA   FE62   @BNKBF   FE35   @CTBL    052A   
-@DTBL    0936   @ADRV    06ED   @RDRV    06EE   @TRK     06EF   
-@SECT    06F1   @DMA     06F3   @DBNK    06F6   @CNT     06F5   
-@CBNK    0249   @CRDMA   FE3C   @CRDSK   FE3E   @VINFO   FE3F   
-@RESEL   FE41   @FX      FE43   @USRCD   FE44   @MLTIO   FE4A   
-@ERMDE   FE4B   @ERDSK   FE51   @MEDIA   FE54   @BFLGS   FE57   
-@DATE    FE58   @HOUR    FE5A   @MIN     FE5B   @SEC     FE5C   
-
-ABSOLUTE     0000
-CODE SIZE    05A7 (0000-05A6)
-DATA SIZE    03B2 (0600-09B1)
-COMMON SIZE  0000
-USE FACTOR     22
-
-H>;
-H>; Create the CPM3BANK.SYS file using the original default GENCPM.ORG
-H>; This uses the load-map fixed GENCPM3.COM version.
-H>ERA GENCPM.DAT
-H>PIP GENCPM.DAT=GENCPM.ORG
-A:PIP      COM
-
-H>GENCPM3 AUTO DISPLAY
-H:GENCPM3  COM
-
-
-CP/M 3.0 System Generation
-Copyright (C) 1982, Digital Research
-
-Default entries are shown in (parens).
-Default base is Hex, precede entry with # for decimal
-
-Use GENCPM.DAT for defaults (Y) ? 
-
-Create a new GENCPM.DAT file (N) ? 
-
-Display Load Map at Cold Boot (Y) ? 
-
-Number of console columns (#80) ? 
-Number of lines in console page (#24) ? 
-Backspace echoes erased character (N) ? 
-Rubout echoes erased character (Y) ? 
-
-Initial default drive (A:) ? 
-
-Top page of memory (FF) ? 
-Bank switched memory (Y) ? 
-Common memory base page (80) ? 
-
-Long error messages (Y) ? 
-
-Accept new system definition (Y) ? 
-
-Setting up Allocation vector for drive A:
-Setting up Checksum vector for drive A:
-Setting up Allocation vector for drive B:
-Setting up Checksum vector for drive B:
-Setting up Allocation vector for drive C:
-Setting up Checksum vector for drive C:
-Setting up Allocation vector for drive D:
-Setting up Checksum vector for drive D:
-Setting up Allocation vector for drive E:
-Setting up Checksum vector for drive E:
-Setting up Allocation vector for drive F:
-Setting up Checksum vector for drive F:
-Setting up Allocation vector for drive G:
-Setting up Checksum vector for drive G:
-Setting up Allocation vector for drive H:
-Setting up Checksum vector for drive H:
-Setting up Allocation vector for drive I:
-Setting up Checksum vector for drive I:
-Setting up Allocation vector for drive J:
-Setting up Checksum vector for drive J:
-Setting up Allocation vector for drive K:
-Setting up Checksum vector for drive K:
-Setting up Allocation vector for drive L:
-Setting up Checksum vector for drive L:
-Setting up Allocation vector for drive M:
-Setting up Checksum vector for drive M:
-Setting up Allocation vector for drive N:
-Setting up Checksum vector for drive N:
-Setting up Allocation vector for drive O:
-Setting up Checksum vector for drive O:
-Setting up Allocation vector for drive P:
-Setting up Checksum vector for drive P:
-
-*** Bank 1 and Common are not included ***
-*** in the memory segment table.       ***
-
-Number of memory segments (#2) ? 
-
-CP/M 3 Base,size,bank (26,5A,00)
-
-Enter memory segment table:
- Base,size,bank (00,26,00) ? 
- Base,size,bank (00,80,02) ? 
-
- CP/M 3 Sys    2600H 5A00H  Bank 00
- Memseg No. 00 0000H 2600H  Bank 00
- Memseg No. 01 0000H 8000H  Bank 02
-
-Accept new memory segment table entries (Y) ? 
-
-Setting up directory hash tables:
- Enable hashing for drive A: (N) ? 
- Enable hashing for drive B: (N) ? 
- Enable hashing for drive C: (N) ? 
- Enable hashing for drive D: (N) ? 
- Enable hashing for drive E: (N) ? 
- Enable hashing for drive F: (N) ? 
- Enable hashing for drive G: (N) ? 
- Enable hashing for drive H: (N) ? 
- Enable hashing for drive I: (N) ? 
- Enable hashing for drive J: (N) ? 
- Enable hashing for drive K: (N) ? 
- Enable hashing for drive L: (N) ? 
- Enable hashing for drive M: (N) ? 
- Enable hashing for drive N: (N) ? 
- Enable hashing for drive O: (N) ? 
- Enable hashing for drive P: (N) ? 
-
-Setting up Blocking/Deblocking buffers:
-
-The physical record size is 0200H:
-
-     Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0026H
-
-               Number of directory buffers for drive A: (#8) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0015H
-
-               Number of data buffers for drive A: (#2) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of directory buffers for drive B: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of data buffers for drive B: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of directory buffers for drive C: (#0) ? 
-               Share buffer(s) with which drive (B:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of data buffers for drive C: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of directory buffers for drive D: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of data buffers for drive D: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of directory buffers for drive E: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of data buffers for drive E: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of directory buffers for drive F: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of data buffers for drive F: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of directory buffers for drive G: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of data buffers for drive G: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of directory buffers for drive H: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of data buffers for drive H: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of directory buffers for drive I: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of data buffers for drive I: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of directory buffers for drive J: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of data buffers for drive J: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of directory buffers for drive K: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of data buffers for drive K: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of directory buffers for drive L: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of data buffers for drive L: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of directory buffers for drive M: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of data buffers for drive M: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of directory buffers for drive N: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of data buffers for drive N: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of directory buffers for drive O: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of data buffers for drive O: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of directory buffers for drive P: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-               Number of data buffers for drive P: (#0) ? 
-               Share buffer(s) with which drive (A:) ? 
-
-     Available space in 256 byte pages:
-     TPA = 00F0H, Bank 0 = 0015H
-
-
-Accept new buffer definitions (Y) ? 
-
- RESBIOS3 SPR  F600H  0600H
- BNKBIOS3 SPR  5300H  2D00H
- RESBDOS3 SPR  F000H  0600H
- BNKBDOS3 SPR  2500H  2E00H
-
-*** CP/M 3.0 SYSTEM GENERATION DONE ***
-H>ERA CPM3BANK.SYS
-H>REN CPM3BANK.SYS=CPM3.SYS
-H>;
-H>; Compare resultant system image with original one on A: drive
-H>;BINCOM A:CPM3-128.SYS CPM3BANK.SYS
-H>;
-H>DATE
-A:DATE     COM
-Tue 22/10/2019 21:53:06
-H>;
-H>; All done - end of log file
-H>PUT CONSOLE TO CONSOLE
-A:PUT      COM
-

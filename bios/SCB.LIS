@@ -1,4 +1,4 @@
-ZSM 4.1	Source file: SCB      	22-Oct-2019  09:58:48	Page    1
+ZSM 4.1	Source file: SCB      	12-Feb-2020  15:27:47	Page    1
 System Control Block Definition for CP/M3 BIOS
 
                                 	.z80
@@ -54,7 +54,7 @@ System Control Block Definition for CP/M3 BIOS
   0000  =                       	end
 
 Errors: 0
-ZSM 4.1	Source file: SCB      	22-Oct-2019  09:58:48	Page    2
+ZSM 4.1	Source file: SCB      	12-Feb-2020  15:27:47	Page    2
 
 Symbols:
 ?ERJMP ........... FE5F P @AIVEC ........... FE26 P @AOVEC ........... FE28 P
@@ -66,4 +66,3 @@ Symbols:
 @MXTPA ........... FE62 P @RESEL ........... FE41 P @SEC ............. FE5C P
 @USRCD ........... FE44 P @VINFO ........... FE3F P SCB$BASE ......... FE00 
 
-

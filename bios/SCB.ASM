@@ -46,4 +46,3 @@ scb$base equ    0FE00H          ; Base of the SCB
 @MXTPA  equ     scb$base+62h    ; Top of User TPA 
                                 ; (address at 6,7)(word, r/o)
 	end
-
