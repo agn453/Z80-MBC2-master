@@ -28,7 +28,7 @@ produces ZPM3.SYS from Simeon Cran's ZPM3 replacement BDOS modules.
 
 Also included the source-code to the Z80-MBC2 version of XMODEM and
 AUTOEXEC.ASM (from the SD card src/CPM_3_Utils folder) and cleaned
-up <NUL>s and <CTRL-Z>s from the end of text files.
+up stray NUL and CTRL-Z characters from the end of text files.
 
 
 22-Oct-2019
