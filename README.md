@@ -3,9 +3,9 @@ Custom CP/M 3 BIOS and Sketches for Z80-MBC2 single board computer
 ==================================================================
 
 This repository contains the original CP/M 3 BIOS source files, plus
-my modified files to support either the original DR supplied CP/M 3
-BDOS modules, or Simeon Cran's ZPM3(1) replacement BDOS modules for the
-Z80-MBC2 single board computer
+my modified files to support either the original Digital Research Inc.
+supplied CP/M 3 BDOS modules, or Simeon Cran's ZPM3(1) replacement BDOS
+modules for the Z80-MBC2 single board computer
 (see https://hackaday.io/project/159973-z80-mbc2-4ics-homemade-z80-computer
 for details)
 
@@ -30,7 +30,7 @@ support for CollapseOS.
 
 * Z80-MBC2-ATmega1284P-PU contains my modifications for the ATmega1284A-PU
 chip.  This was forked from https://github.com/HomebrewMicros/Z80-MBC2-ATMEL1284
-and will shortly contain the CollapseOS updates too.
+and also contains the CollapseOS updates too.
 
 To build the sketches under the Arduino IDE with XMODEM extended buffering
 support, you must modify the MightyCore board definitions to include extra

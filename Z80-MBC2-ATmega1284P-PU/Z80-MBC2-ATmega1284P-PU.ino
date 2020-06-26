@@ -7,6 +7,7 @@ IOS - I/O  for Z80-MBC2 - Multi Boot Computer version 2
     Z80 128kB RAM @ 4/8Mhz @ Fosc = 16MHz
 or  Z80 128kB RAM @ 5/10MHz @ Fosc = 20MHz
 
+LAST UPDATED: 24-Jun-2020
 
 Notes:
 
@@ -69,6 +70,9 @@ S220718-R280819    Added a new Disk Set for the UCSD Pascal implementation (port
 
 Z80-MBC2-ATMEL1284 Forked from S220718-R280819 - new project using ATMEGA1284P (pin compatible with
                    the previous Atmega32A).  Changed register names.  Improved readability.
+
+                   Updated to support Collapse OS (https://collapseos.org/) by merging the updates
+                   from the official S220718-R240620 release.
 
 --------------------------------------------------------------------------------- */
 
@@ -142,13 +146,14 @@ Z80-MBC2-ATMEL1284 Forked from S220718-R280819 - new project using ATMEGA1284P (
 //
 // ------------------------------------------------------------------------------
 
-#define   BASICFN       "BASIC47.BIN"
-#define   FORTHFN       "FORTH13.BIN"
-#define   CPMFN         "CPM22.BIN"
-#define   QPMFN         "QPMLDR.BIN"
+#define   BASICFN       "BASIC47.BIN"     // "ROM" BASIC
+#define   FORTHFN       "FORTH13.BIN"     // "ROM" Forth
+#define   CPMFN         "CPM22.BIN"       // CP/M 2.2 loader
+#define   QPMFN         "QPMLDR.BIN"      // QP/M 2.71 loader
 #define   CPM3FN        "CPMLDR.COM"      // CP/M 3 CPMLDR.COM loader
 #define   UCSDFN        "UCSDLDR.BIN"     // UCSD Pascal loader
-#define   AUTOFN        "AUTOBOOT.BIN"
+#define   COSFN         "COS.BIN"         // Collapse OS loader
+#define   AUTOFN        "AUTOBOOT.BIN"    // Autoboot.bin file
 #define   Z80DISK       "DSxNyy.DSK"      // Generic Z80 disk name (from DS0N00.DSK to DS9N99.DSK)
 #define   DS_OSNAME     "DSxNAM.DAT"      // File with the OS name for Disk Set "x" (from DS0NAM.DAT to DS9NAM.DAT)
 #define   BASSTRADDR    0x0000            // Starting address for the stand-alone Basic interpreter
@@ -158,11 +163,12 @@ Z80-MBC2-ATMEL1284 Forked from S220718-R280819 - new project using ATMEGA1284P (
 #define   QPMSTRADDR    0x80              // Starting address for the QP/M 2.71 loader
 #define   CPM3STRADDR   0x100             // Starting address for the CP/M 3 loader
 #define   UCSDSTRADDR   0x0000            // Starting address for the UCSD Pascal loader
+#define   COSSTRADDR    0x0000            // Starting address for the Collapse OS loader
 #define   AUTSTRADDR    0x0000            // Starting address for the AUTOBOOT.BIN file
 
 // ------------------------------------------------------------------------------
 //
-// Atmega clock speed check
+// Atmega clock speed check (select External 16MHz or 20MHz to match crystal used)
 //
 // ------------------------------------------------------------------------------
 
@@ -205,7 +211,7 @@ const byte    clockModeAddr = 13;         // Internal EEPROM address for the Z80
                                           //  (1 = low speed, 0 = high speed)
 const byte    diskSetAddr  = 14;          // Internal EEPROM address for the current Disk Set [0..9]
 const byte    maxDiskNum   = 99;          // Max number of virtual disks
-const byte    maxDiskSet   = 4;           // Number of configured Disk Sets
+const byte    maxDiskSet   = 5;           // Number of configured Disk Sets
 
 // Z80 programs images into flash and related constants
 const word  boot_A_StrAddr = 0xfd10;      // Payload A image starting address (flash)
@@ -396,7 +402,7 @@ void setup()
     
     // Print some system information
     Serial.begin(115200);
-    Serial.println(F("\r\n\nZ80-MBC2 - A040618\r\nIOS - I/O Subsystem - S220718-R280819 on ATmega1284P-PU\r\n"));
+    Serial.println(F("\r\n\nZ80-MBC2 - A040618\r\nIOS - I/O Subsystem - S220718-R240620 on ATmega1284P-PU\r\n"));
 
     // Print if the input serial buffer is 128 bytes wide (this is needed for xmodem protocol support)
     if (SERIAL_RX_BUFFER_SIZE >= 128) 
@@ -550,12 +556,12 @@ void setup()
                 }
                 break;
 
-            case '9':                                   // Change RTC Date/Time
-                ChangeRTC();                              // Change RTC Date/Time if requested
+            case '9':                                 // Change RTC Date/Time
+                ChangeRTC();                          // Change RTC Date/Time if requested
                 break;
         } // switch
     
-        // Save selectd boot program if changed
+        // Save selected boot program if changed
         bootMode = inChar - '1';                      // Calculate bootMode from inChar
         if (bootMode <= maxBootMode) 
         {
@@ -614,6 +620,11 @@ void setup()
                     case 3:                                     // UCSD Pascal
                     fileNameSD = UCSDFN;
                     BootStrAddr = UCSDSTRADDR;
+                    break;
+
+                    case 4:                                     // Collapse OS
+                    fileNameSD = COSFN;
+                    BootStrAddr = COSSTRADDR;
                     break;
             }
             break;
