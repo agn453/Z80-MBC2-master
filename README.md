@@ -28,9 +28,9 @@ Include latest Arduino sketches for the Z80-MBC2 board.
 S220718-R240620_IOS using the ATmega32A-PU chip.  This includes
 support for CollapseOS.
 
-* Z80-MBC2-ATmega1284P-PU is contains my modifications for the ATmega1284A-PU
+* Z80-MBC2-ATmega1284P-PU contains my modifications for the ATmega1284A-PU
 chip.  This was forked from https://github.com/HomebrewMicros/Z80-MBC2-ATMEL1284
-and contains my own updates.
+and will shortly contain the CollapseOS updates too.
 
 To build the sketches under the Arduino IDE with XMODEM extended buffering
 support, you must modify the MightyCore board definitions to include extra
