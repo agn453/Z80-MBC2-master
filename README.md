@@ -19,6 +19,28 @@ Assembler(2).
 Modification History (in reverse chronological order):
 ======================================================
 
+26-Jun-2020
+-----------
+
+Include latest Arduino sketches for the Z80-MBC2 board.
+
+* Z80-MBC2-ATmega32A-PU is a copy of the unmodified release
+S220718-R240620_IOS using the ATmega32A-PU chip.  This includes
+support for CollapseOS.
+
+* Z80-MBC2-ATmega1284P-PU is contains my modifications for the ATmega1284A-PU
+chip.  This was forked from https://github.com/HomebrewMicros/Z80-MBC2-ATMEL1284
+and contains my own updates.
+
+To build the sketches under the Arduino IDE with XMODEM extended buffering
+support, you must modify the MightyCore board definitions to include extra
+symbol definitions for SERIAL_RX_BUFFER_SIZE=256 and SERIAL_TX_BUFFER_SIZE=64.
+The file arduino-changes-MightyCore-2.0.5.readme has a context diff for
+the version I'm using.
+
+Also, I've updated ZSM4.COM to the latest release.
+
+
 17-Feb-2020
 -----------
 

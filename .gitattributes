@@ -1,0 +1,27 @@
+# Default is to keep crlf line endings
+text=auto
+
+README.md text
+GENCPM.* text eol=crlf
+*.DOC text eof=crlf
+*.ASM text eol=crlf linguist-language=Assembly
+*.c text linguist-language=C
+*.cpp text linguist-language=C
+*.h text linguist-language=C
+*.CFG text eol=crlf
+*.COM binary
+*.H text eol=crlf linguist-language=C
+*.LBR binary
+*.LIB text eol=crlf linguist-langiage=Assembly
+*.LIS text eol=crlf
+*.LOG text eol=crlf
+*.MAC text eol=crlf linguist-language=Assembly
+*.readme text
+*.REL binary
+*.SPD binary
+*.SPR binary
+*.SUB text eol=crlf
+*.SYM text eol=crlf
+*.SYS binary
+*.Z80 text eol=crlf linguist-language=Assembly
+
