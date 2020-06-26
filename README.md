@@ -1,6 +1,6 @@
 # Z80-MBC2-master
-Custom CP/M 3 BIOS for Z80-MBC2 single board computer
-=====================================================
+Custom CP/M 3 BIOS and Sketches for Z80-MBC2 single board computer
+==================================================================
 
 This repository contains the original CP/M 3 BIOS source files, plus
 my modified files to support either the original DR supplied CP/M 3
