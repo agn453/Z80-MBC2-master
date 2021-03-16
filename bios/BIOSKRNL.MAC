@@ -7,6 +7,13 @@
 ;
 ;	Assemble using Microsoft M80 or Hector Peraza's ZSM4
 ;
+;	Added support for BIOS debugging.  This will include
+;	a routine to output hexadecimal to the console (?phex)
+;	that can be used by other modules.  Also modified the
+;	?pmsg routine to advance the message pointer past the
+;	null terminator to allow cascading calls to it during
+;	debugging (saves a few bytes). AGN 16-Mar-2021
+;
 ;******************************************************************************
 ;
 ; BIOSKRNL.ASM - S170319
@@ -29,7 +36,8 @@ true	equ	-1
 false	equ	not true
 
 banked	equ	true		; <------ BANKED Version
-	
+
+	include	config.lib	;AGN - added for debugging extras
 
 ;		  Copyright (C), 1982
 ;		 Digital Research, Inc
@@ -97,6 +105,10 @@ ccp	equ	0100h		; Console Command Processor gets loaded into the TPA
 
 	public ?pmsg,?pdec	; print message, print number from 0 to 65535
 	public ?pderr		; print BIOS disk error message header
+
+  if DBG			;AGN for debugging output
+	public ?phex		; print value in <A> to console in hexadecimal
+  endif
 
 	include modebaud.lib	; define character I/O mode bits
 
@@ -531,17 +543,19 @@ ipchl:				; vectored CALL point
 
 ?pmsg:				; print message @<HL> up to a null
 				; saves <BC> & <DE>
+				; on exit <HL> points past the null
+				; to allow cascading messages
 	push	bc
 	push	de
 pmsg$loop:
 	ld	a,(hl)
+	inc	hl
 	or	a
 	jr	z,pmsg$exit
 	ld	c,a
 	push	hl
 	call	?cono
 	pop	hl
-	inc	hl
 	jr	pmsg$loop
 pmsg$exit:
 	pop	de
@@ -600,6 +614,34 @@ table10:
 	ld	hl,(@sect)
 	jp	?pdec		; sector number
 
+  if DBG
+;
+; ?PHEX
+;
+;	Print value in <A> in hexadecimal to console
+;
+?phex:	push	af
+	rrca
+	rrca
+	rrca
+	rrca
+	call	phexc
+	pop	af
+phexc:	and	0fh
+	add	a,90h
+	daa
+	adc	a,40h
+	daa
+	push	hl
+	push	de
+	push	bc
+	ld	c,a
+	call	?cono
+	pop	bc
+	pop	de
+	pop	hl
+	ret
+  endif
 
 				; BNKSEL
 				; 	Bank Select.  Select CPU bank for further execution.

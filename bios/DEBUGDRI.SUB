@@ -1,17 +1,19 @@
-; BUILDDRI.SUB - Assemble and Link Banked BIOS and Generate a new DRI3.SYS
+; DEBUGDRI.SUB - Assemble and Link Banked BIOS and Generate a new DRI3DBG.SYS
+;
+; ** DEBUG VERSION **
 ;
 ; Two parameters can be specified for GENCPM (usually AUTO DISPLAY).
-; The GENCPM memory layout defaults are in the GENCPM.DRI file. Any
+; The GENCPM memory layout defaults are in the GENCPMDB.DRI file. Any
 ; changes to the memory layout during the GENCPM phase should be
 ; manually copied back to this file for future builds.
 ;
 ; Keep a log-file of this build run
-ERA BUILDDRI.LOG
-PUT CONSOLE OUTPUT TO FILE BUILDDRI.LOG [SYSTEM]
+ERA DEBUGDRI.LOG
+PUT CONSOLE OUTPUT TO FILE DEBUGDRI.LOG [SYSTEM]
 ;
 DATE
 ;
-PIP CONFIG.LIB=NODEBUG.LIB
+PIP CONFIG.LIB=DEBUG.LIB
 ;
 ; Assemble latest source-code versions (.MAC files)
 ZSM4 BIOSKRNL,BIOSKRNL.LST=BIOSKRNL
@@ -25,7 +27,7 @@ ZSM4 LDRBIOS,LDRBIOS.LST=LDRBIOS
 ZSM4 CPMLDR3,CPMLDR3.LST=CPMLDR3
 LINK CPMLDR3=CPMLDR3,LDRBIOS
 ;
-ZSM4 TESTLDR,TESTLDR.LST=CPMLDR3/DTEST=1
+ZSM4 TESTLDR,TESTLDR.LST=CPMLDR3/dTEST=1
 LINK TESTLDR=TESTLDR,LDRBIOS
 ;
 ; Select standard DRI CP/M BDOS modules
@@ -34,13 +36,13 @@ DRI-CPM3.SUB
 ; Make banked memory page relocatable of BIOS for GENCPM to use
 LINK BNKBIOS3[B]=BIOSKRNL,SCB,BOOT,CHARIO,MOVE,VDISK
 ;
-; Create the CPM3BANK.SYS file using the original default GENCPM.DRI
+; Create the CPM3.SYS file using the debugging default GENCPMDB.DRI
 ; This uses the load-map fixed GENCPM3.COM version.
 ERA GENCPM.DAT
-PIP GENCPM.DAT=GENCPM.DRI
+PIP GENCPM.DAT=GENCPMDB.DRI
 GENCPM3 $1 $2
-ERA DRI3.SYS
-REN DRI3.SYS=CPM3.SYS
+ERA DRI3DBG.SYS
+REN DRI3DBG.SYS=CPM3.SYS
 ;
 DATE
 ;

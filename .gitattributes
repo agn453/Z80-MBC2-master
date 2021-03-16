@@ -15,6 +15,7 @@ GENCPM.* text eol=crlf
 *.LIB text eol=crlf linguist-langiage=Assembly
 *.LIS text eol=crlf
 *.LOG text eol=crlf
+*.ZPR text eof=crlf
 *.MAC text eol=crlf linguist-language=Assembly
 *.readme text
 *.REL binary

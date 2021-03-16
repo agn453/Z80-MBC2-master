@@ -1,6 +1,5 @@
 # Z80-MBC2-master
-Custom CP/M 3 BIOS and Sketches for Z80-MBC2 single board computer
-==================================================================
+## Custom CP/M 3 BIOS and Sketches for Z80-MBC2 single board computer
 
 This repository contains the original CP/M 3 BIOS source files, plus
 my modified files to support either the original Digital Research Inc.
@@ -16,11 +15,21 @@ format into Zilog Z80 mnemonics and can be assembled using the
 Microsoft M80 Macro Assembler or (my preferred) Hector Peraza's ZSM4 Macro
 Assembler(2).
 
-Modification History (in reverse chronological order):
-======================================================
+## Modification History (in reverse chronological order):
 
-26-Jun-2020
------------
+### 16-Mar-2021
+
+Some minor updates to allow debugging the banked BIOS memory move
+module (XMOVE and MOVE).  Two additional submit files are included
+to build banked system images (DRI3DBG.SYS and ZPM3DBG.SYS) that can
+trace the calls to the BIOS XMOVE and MOVE routines by outputting
+messages to the console.  I used these to track down an issue with
+the Digital Research banked BIOS that may cause memory corruptions.
+The issue doesn't seem to occur if you use the ZPM3 banked BDOS
+replacement (from ZPM3.SYS).
+
+
+### 26-Jun-2020
 
 Include latest Arduino sketches for the Z80-MBC2 board.
 
@@ -41,8 +50,7 @@ the version I'm using.
 Also, I've updated ZSM4.COM to the latest release.
 
 
-17-Feb-2020
------------
+### 17-Feb-2020
 
 Tidy up the build files.  BUILDDRI.SUB now builds a DRI3.SYS file from
 the Digital Research supplied Resident BDOS modules, and BUILDZPR.SUB
@@ -53,8 +61,7 @@ AUTOEXEC.ASM (from the SD card src/CPM_3_Utils folder) and cleaned
 up stray NUL and CTRL-Z characters from the end of text files.
 
 
-22-Oct-2019
------------
+### 22-Oct-2019
 
 Firstly, I have attempted to re-construct the distributed CP/M 3 system
 image file (CPM3-128.SYS).

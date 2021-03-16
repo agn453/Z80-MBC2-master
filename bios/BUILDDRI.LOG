@@ -2,7 +2,11 @@
 H>;
 H>DATE
 A:DATE     COM
-Wed 12/02/2020 15:40:35
+Tue 16/03/2021 14:31:02
+H>;
+H>PIP CONFIG.LIB=NODEBUG.LIB
+A:PIP      COM
+
 H>;
 H>; Assemble latest source-code versions (.MAC files)
 H>ZSM4 BIOSKRNL,BIOSKRNL.LST=BIOSKRNL
@@ -65,7 +69,7 @@ Finished.
 H>LINK CPMLDR3=CPMLDR3,LDRBIOS
 A:LINK     COM
 LINK 1.31
-
+
 RBASE    0100   CLOOP    0134   $EXECU   015F   LOAD     0173   
 LOOP     017A   SETDMA   018F   READ$P   0195   ERROR    01A2   
 BREAK    01A9   CPMFCB   01AB   OPENER   01CF   READER   01FA   
@@ -77,7 +81,7 @@ ABSOLUTE     0000
 CODE SIZE    1382 (0100-1481)
 DATA SIZE    0000
 COMMON SIZE  0000
-USE FACTOR     24
+USE FACTOR     23
 
 H>;
 H>ZSM4 TESTLDR,TESTLDR.LST=CPMLDR3/DTEST=1
@@ -90,7 +94,7 @@ Finished.
 H>LINK TESTLDR=TESTLDR,LDRBIOS
 A:LINK     COM
 LINK 1.31
-
+
 TEST     0001   RBASE    0100   CLOOP    0134   $EXECU   015F   
 LOAD     0173   LOOP     017A   SETDMA   018F   READ$P   0195   
 ERROR    01A2   BREAK    01A9   CPMFCB   01AB   OPENER   01CF   
@@ -102,7 +106,7 @@ ABSOLUTE     0000
 CODE SIZE    1382 (0100-1481)
 DATA SIZE    0000
 COMMON SIZE  0000
-USE FACTOR     24
+USE FACTOR     23
 
 H>;
 H>; Select standard DRI CP/M BDOS modules
@@ -110,11 +114,11 @@ H>DRI-CPM3.SUB
 H:DRI-CPM3 SUB
 A:SUBMIT   COM
 
-H>; Select the DRI versions of the Banked BDOS (CP/M-Plus with Y2K patches)
-H>PIP BNKBDOS3.SPR[V]=BNKBDOS3.SPD
+H>; Select the DRI versions of the Banked BDOS (CP/M-Plus with Y2K patches)
+H>PIP BNKBDOS3.SPR[V]=BNKBDOS3.SPD
 A:PIP      COM
 
-H>PIP RESBDOS3.SPR[V]=RESBDOS3.SPD
+H>PIP RESBDOS3.SPR[V]=RESBDOS3.SPD
 A:PIP      COM
 
 H>;
@@ -122,7 +126,7 @@ H>; Make banked memory page relocatable of BIOS for GENCPM to use
 H>LINK BNKBIOS3[B]=BIOSKRNL,SCB,BOOT,CHARIO,MOVE,VDISK
 A:LINK     COM
 LINK 1.31
-
+
 @COVEC   FE24   @CIVEC   FE22   @AOVEC   FE28   @AIVEC   FE26   
 @LOVEC   FE2A   @MXTPA   FE62   @BNKBF   FE35   @CTBL    0493   
 @DTBL    09AC   @ADRV    06E6   @RDRV    06E7   @TRK     06E8   
@@ -137,7 +141,7 @@ ABSOLUTE     0000
 CODE SIZE    05D9 (0000-05D8)
 DATA SIZE    0428 (0600-0A27)
 COMMON SIZE  0000
-USE FACTOR     23
+USE FACTOR     22
 
 H>;
 H>; Create the CPM3BANK.SYS file using the original default GENCPM.DRI
@@ -146,7 +150,7 @@ H>ERA GENCPM.DAT
 H>PIP GENCPM.DAT=GENCPM.DRI
 A:PIP      COM
 
-H>GENCPM3  
+H>GENCPM3 AUTO DISPLAY
 H:GENCPM3  COM
 
 
@@ -158,7 +162,7 @@ Default base is Hex, precede entry with # for decimal
 
 Use GENCPM.DAT for defaults (Y) ? 
 
-Create a new GENCPM.DAT file (N) ? y
+Create a new GENCPM.DAT file (N) ? 
 
 Display Load Map at Cold Boot (Y) ? 
 
@@ -200,7 +204,7 @@ Setting up Allocation vector for drive P:
 Number of memory segments (#2) ? 
 
 CP/M 3 Base,size,bank (2D,53,00)
-
+
 Enter memory segment table:
  Base,size,bank (00,2D,00) ? 
  Base,size,bank (00,80,02) ? 
@@ -230,7 +234,7 @@ Accept new memory segment table entries (Y) ?
  Enable hashing for drive P: (N) ? 
 
 Setting up Blocking/Deblocking buffers:
-
+
 The physical record size is 0200H:
 
      Available space in 256 byte pages:
@@ -422,12 +426,11 @@ Accept new buffer definitions (Y) ?
 
 *** CP/M 3.0 SYSTEM GENERATION DONE ***
 H>ERA DRI3.SYS
-No File
 H>REN DRI3.SYS=CPM3.SYS
 H>;
 H>DATE
 A:DATE     COM
-Wed 12/02/2020 15:48:33
+Tue 16/03/2021 14:41:15
 H>;
 H>; All done - end of log file
 H>PUT CONSOLE TO CONSOLE

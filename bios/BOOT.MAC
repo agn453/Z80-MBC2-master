@@ -6,7 +6,7 @@
 ;	the time routine wasn't fetching all 7 bytes from the
 ;	ATmega.  It now does (including the temperature) and
 ;	this is exposed via a global variable @TEMPC.  Also
-;	added ZPR3 to sign-on message.
+;	added ZPR3 and DBG text to sign-on message.
 ;
 ;	Assemble using Microsoft M80 or Hector Peraza's ZSM4
 ;
@@ -32,6 +32,8 @@ false	equ	not true
 
 				; DETERMINE IF FOR BANK SELECT OR NOT:
 banked	equ	true		; <------ BANKED/NON-BANKED SWITCH
+
+	include	config.lib	;AGN - for debugging
 
 				; DEFINE PUBLIC LABELS:
 	public  ?init,?ldccp,?rlccp,?time
@@ -384,6 +386,9 @@ signon$msg:
 	defb	'(Banked) CP/M V3.0'
   ifdef zpm3
 	defb	' with ZPM3'
+  endif
+  if	DBG			;AGN - debugging version
+	defb	' (DEBUG)'
   endif
 	defb	cr,lf,'Z80-MBC2 BIOS Modules: S200918, S210918-R170319, '
 	defb	'S220918-R180319, S290918,', cr,lf,' S170319'

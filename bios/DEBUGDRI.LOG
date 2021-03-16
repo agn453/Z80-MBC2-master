@@ -2,50 +2,49 @@
 H>;
 H>DATE
 A:DATE     COM
-Tue 16/03/2021 15:02:13
+Tue 16/03/2021 11:52:30
 H>;
-H>PIP CONFIG.LIB=NODEBUG.LIB
+H>PIP CONFIG.LIB=DEBUG.LIB
 A:PIP      COM
 
 H>;
-H>; Assemble the modified Z80 translated source-code versions (.MAC sources)
-H>; (The ZPM3 define causes the boot sign-on to include "with ZPM3")
-H>ZSM4 BIOSKRNL,BIOSKRNL.LIS=BIOSKRNL
+H>; Assemble latest source-code versions (.MAC files)
+H>ZSM4 BIOSKRNL,BIOSKRNL.LST=BIOSKRNL
 H:ZSM4     COM
 Z80/Z180/Z280 Macro-Assembler V4.1
 
 Errors: 0
 Finished.
 
-H>ZSM4 BOOT,BOOT.LIS=BOOT/DZPM3=1
+H>ZSM4 BOOT,BOOT.LST=BOOT
 H:ZSM4     COM
 Z80/Z180/Z280 Macro-Assembler V4.1
 
 Errors: 0
 Finished.
 
-H>ZSM4 CHARIO,CHARIO.LIS=CHARIO
+H>ZSM4 CHARIO,CHARIO.LST=CHARIO
 H:ZSM4     COM
 Z80/Z180/Z280 Macro-Assembler V4.1
 
 Errors: 0
 Finished.
 
-H>ZSM4 MOVE,MOVE.LIS=MOVE
+H>ZSM4 MOVE,MOVE.LST=MOVE
 H:ZSM4     COM
 Z80/Z180/Z280 Macro-Assembler V4.1
 
 Errors: 0
 Finished.
 
-H>ZSM4 SCB,SCB.LIS=SCB
+H>ZSM4 SCB,SCB.LST=SCB
 H:ZSM4     COM
 Z80/Z180/Z280 Macro-Assembler V4.1
 
 Errors: 0
 Finished.
 
-H>ZSM4 VDISK,VDISK.LIS=VDISK
+H>ZSM4 VDISK,VDISK.LST=VDISK
 H:ZSM4     COM
 Z80/Z180/Z280 Macro-Assembler V4.1
 
@@ -53,14 +52,39 @@ Errors: 0
 Finished.
 
 H>;
-H>ZSM4 LDRBIOS,LDRBIOS.LIS=LDRBIOS
+H>ZSM4 LDRBIOS,LDRBIOS.LST=LDRBIOS
 H:ZSM4     COM
 Z80/Z180/Z280 Macro-Assembler V4.1
 
 Errors: 0
 Finished.
 
-H>ZSM4 TESTLDR,TESTLDR.LIS=CPMLDR3/DTEST=1
+H>ZSM4 CPMLDR3,CPMLDR3.LST=CPMLDR3
+H:ZSM4     COM
+Z80/Z180/Z280 Macro-Assembler V4.1
+
+Errors: 0
+Finished.
+
+H>LINK CPMLDR3=CPMLDR3,LDRBIOS
+A:LINK     COM
+LINK 1.31
+
+RBASE    0100   CLOOP    0134   $EXECU   015F   LOAD     0173   
+LOOP     017A   SETDMA   018F   READ$P   0195   ERROR    01A2   
+BREAK    01A9   CPMFCB   01AB   OPENER   01CF   READER   01FA   
+SIGNON   0232   STACKB   0281   MEM$TO   0281   RES$LE   0282   
+BANK$T   0283   BANK$L   0284   OSENTR   0285   BDOS     028D   
+BDOSE    028D   
+
+ABSOLUTE     0000
+CODE SIZE    1382 (0100-1481)
+DATA SIZE    0000
+COMMON SIZE  0000
+USE FACTOR     4E
+
+H>;
+H>ZSM4 TESTLDR,TESTLDR.LST=CPMLDR3/dTEST=1
 H:ZSM4     COM
 Z80/Z180/Z280 Macro-Assembler V4.1
 
@@ -82,47 +106,48 @@ ABSOLUTE     0000
 CODE SIZE    1382 (0100-1481)
 DATA SIZE    0000
 COMMON SIZE  0000
-USE FACTOR     23
+USE FACTOR     4E
+
+H>;
+H>; Select standard DRI CP/M BDOS modules
+H>DRI-CPM3.SUB
+H:DRI-CPM3 SUB
+A:SUBMIT   COM
+
+H>; Select the DRI versions of the Banked BDOS (CP/M-Plus with Y2K patches)
+H>PIP BNKBDOS3.SPR[V]=BNKBDOS3.SPD
+A:PIP      COM
+
+H>PIP RESBDOS3.SPR[V]=RESBDOS3.SPD
+A:PIP      COM
 
 H>;
 H>; Make banked memory page relocatable of BIOS for GENCPM to use
-H>LINK BNKBIOS3[B]=BIOSKRNL,BOOT,CHARIO,MOVE,SCB,VDISK
+H>LINK BNKBIOS3[B]=BIOSKRNL,SCB,BOOT,CHARIO,MOVE,VDISK
 A:LINK     COM
 LINK 1.31
 
 @COVEC   FE24   @CIVEC   FE22   @AOVEC   FE28   @AIVEC   FE26   
-@LOVEC   FE2A   @MXTPA   FE62   @BNKBF   FE35   @CTBL    0493   
-@DTBL    09B6   @ADRV    06E6   @RDRV    06E7   @TRK     06E8   
-@SECT    06EA   @DMA     06EC   @DBNK    06EF   @CNT     06EE   
-@CBNK    0235   ZPM3     0001   @SEC     FE5C   @MIN     FE5B   
-@HOUR    FE5A   @DATE    FE58   @TEMPC   0323   @CRDMA   FE3C   
-@CRDSK   FE3E   @VINFO   FE3F   @RESEL   FE41   @FX      FE43   
-@USRCD   FE44   @MLTIO   FE4A   @ERMDE   FE4B   @ERDSK   FE51   
-@MEDIA   FE54   @BFLGS   FE57   
+@LOVEC   FE2A   @MXTPA   FE62   @BNKBF   FE35   @CTBL    04AF   
+@DTBL    0AB4   @ADRV    07E6   @RDRV    07E7   @TRK     07E8   
+@SECT    07EA   @DMA     07EC   @DBNK    07EF   @CNT     07EE   
+@CBNK    0251   @CRDMA   FE3C   @CRDSK   FE3E   @VINFO   FE3F   
+@RESEL   FE41   @FX      FE43   @USRCD   FE44   @MLTIO   FE4A   
+@ERMDE   FE4B   @ERDSK   FE51   @MEDIA   FE54   @BFLGS   FE57   
+@DATE    FE58   @HOUR    FE5A   @MIN     FE5B   @SEC     FE5C   
+@TEMPC   033F   
 
 ABSOLUTE     0000
-CODE SIZE    05D9 (0000-05D8)
-DATA SIZE    0432 (0600-0A31)
+CODE SIZE    0678 (0000-0677)
+DATA SIZE    0430 (0700-0B2F)
 COMMON SIZE  0000
-USE FACTOR     22
+USE FACTOR     4F
 
 H>;
-H>; Use Simeon Cran's ZPM3 replacement BDOS routines
-H>USE-ZPM3.SUB
-H:USE-ZPM3 SUB
-A:SUBMIT   COM
-
-H>; Select the ZPM3 Banked BDOS modules (Simeon Cran's Z80 CP/M3 replacement)
-H>PIP BNKBDOS3.SPR[V]=BNKBDOS3.SPZ
-A:PIP      COM
-
-H>PIP RESBDOS3.SPR[V]=RESBDOS3.SPZ
-A:PIP      COM
-
-H>;
-H>; Create the TEST.SYS file
+H>; Create the CPM3.SYS file using the debugging default GENCPMDB.DRI
+H>; This uses the load-map fixed GENCPM3.COM version.
 H>ERA GENCPM.DAT
-H>PIP GENCPM.DAT=GENCPM.ZPR
+H>PIP GENCPM.DAT=GENCPMDB.DRI
 A:PIP      COM
 
 H>GENCPM3 AUTO DISPLAY
@@ -213,209 +238,199 @@ Accept new memory segment table entries (Y) ?
 The physical record size is 0200H:
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 002DH, Other banks = 0080H
+     TPA = 00F3H, Bank 0 = 002DH, Other banks = 0080H
 
                Number of directory buffers for drive A: (#3) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0026H, Other banks = 0080H
+     TPA = 00F3H, Bank 0 = 0026H, Other banks = 0080H
 
                Number of data buffers for drive A: (#4) ? 
                Allocate buffers outside of Common (Y) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0026H, Other banks = 0078H
+     TPA = 00F3H, Bank 0 = 0026H, Other banks = 0078H
 
                Number of directory buffers for drive B: (#1) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0024H, Other banks = 0078H
+     TPA = 00F3H, Bank 0 = 0024H, Other banks = 0078H
 
                Number of data buffers for drive B: (#4) ? 
                Allocate buffers outside of Common (Y) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0024H, Other banks = 0070H
+     TPA = 00F3H, Bank 0 = 0024H, Other banks = 0070H
 
                Number of directory buffers for drive C: (#1) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0022H, Other banks = 0070H
+     TPA = 00F3H, Bank 0 = 0022H, Other banks = 0070H
 
                Number of data buffers for drive C: (#4) ? 
                Allocate buffers outside of Common (Y) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0022H, Other banks = 0068H
+     TPA = 00F3H, Bank 0 = 0022H, Other banks = 0068H
 
                Number of directory buffers for drive D: (#1) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 001FH, Other banks = 0068H
+     TPA = 00F3H, Bank 0 = 001FH, Other banks = 0068H
 
                Number of data buffers for drive D: (#4) ? 
                Allocate buffers outside of Common (Y) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 001FH, Other banks = 0060H
+     TPA = 00F3H, Bank 0 = 001FH, Other banks = 0060H
 
                Number of directory buffers for drive E: (#1) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 001DH, Other banks = 0060H
+     TPA = 00F3H, Bank 0 = 001DH, Other banks = 0060H
 
                Number of data buffers for drive E: (#4) ? 
                Allocate buffers outside of Common (Y) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 001DH, Other banks = 0058H
+     TPA = 00F3H, Bank 0 = 001DH, Other banks = 0058H
 
                Number of directory buffers for drive F: (#1) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 001BH, Other banks = 0058H
+     TPA = 00F3H, Bank 0 = 001BH, Other banks = 0058H
 
                Number of data buffers for drive F: (#4) ? 
                Allocate buffers outside of Common (Y) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 001BH, Other banks = 0050H
+     TPA = 00F3H, Bank 0 = 001BH, Other banks = 0050H
 
                Number of directory buffers for drive G: (#1) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0019H, Other banks = 0050H
+     TPA = 00F3H, Bank 0 = 0019H, Other banks = 0050H
 
                Number of data buffers for drive G: (#4) ? 
                Allocate buffers outside of Common (Y) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0018H, Other banks = 0048H
+     TPA = 00F3H, Bank 0 = 0018H, Other banks = 0048H
 
                Number of directory buffers for drive H: (#3) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0012H, Other banks = 0048H
+     TPA = 00F3H, Bank 0 = 0012H, Other banks = 0048H
 
                Number of data buffers for drive H: (#4) ? 
                Allocate buffers outside of Common (Y) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0012H, Other banks = 0040H
+     TPA = 00F3H, Bank 0 = 0012H, Other banks = 0040H
 
                Number of directory buffers for drive I: (#1) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0010H, Other banks = 0040H
+     TPA = 00F3H, Bank 0 = 0010H, Other banks = 0040H
 
                Number of data buffers for drive I: (#4) ? 
                Allocate buffers outside of Common (Y) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0010H, Other banks = 0038H
+     TPA = 00F3H, Bank 0 = 0010H, Other banks = 0038H
 
                Number of directory buffers for drive J: (#1) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 000EH, Other banks = 0038H
+     TPA = 00F3H, Bank 0 = 000EH, Other banks = 0038H
 
                Number of data buffers for drive J: (#4) ? 
                Allocate buffers outside of Common (Y) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 000DH, Other banks = 0030H
+     TPA = 00F3H, Bank 0 = 000DH, Other banks = 0030H
 
                Number of directory buffers for drive K: (#1) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 000BH, Other banks = 0030H
+     TPA = 00F3H, Bank 0 = 000BH, Other banks = 0030H
 
                Number of data buffers for drive K: (#4) ? 
                Allocate buffers outside of Common (Y) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 000BH, Other banks = 0028H
+     TPA = 00F3H, Bank 0 = 000BH, Other banks = 0028H
 
                Number of directory buffers for drive L: (#1) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0009H, Other banks = 0028H
+     TPA = 00F3H, Bank 0 = 0009H, Other banks = 0028H
 
                Number of data buffers for drive L: (#4) ? 
                Allocate buffers outside of Common (Y) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0009H, Other banks = 0020H
+     TPA = 00F3H, Bank 0 = 0009H, Other banks = 0020H
 
                Number of directory buffers for drive M: (#1) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0007H, Other banks = 0020H
+     TPA = 00F3H, Bank 0 = 0007H, Other banks = 0020H
 
                Number of data buffers for drive M: (#4) ? 
                Allocate buffers outside of Common (Y) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0006H, Other banks = 0018H
+     TPA = 00F3H, Bank 0 = 0006H, Other banks = 0018H
 
                Number of directory buffers for drive N: (#1) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0004H, Other banks = 0018H
+     TPA = 00F3H, Bank 0 = 0004H, Other banks = 0018H
 
                Number of data buffers for drive N: (#4) ? 
                Allocate buffers outside of Common (Y) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0004H, Other banks = 0010H
+     TPA = 00F3H, Bank 0 = 0004H, Other banks = 0010H
 
                Number of directory buffers for drive O: (#1) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0002H, Other banks = 0010H
+     TPA = 00F3H, Bank 0 = 0002H, Other banks = 0010H
 
                Number of data buffers for drive O: (#4) ? 
                Allocate buffers outside of Common (Y) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0002H, Other banks = 0008H
+     TPA = 00F3H, Bank 0 = 0002H, Other banks = 0008H
 
                Number of directory buffers for drive P: (#1) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0000H, Other banks = 0008H
+     TPA = 00F3H, Bank 0 = 0000H, Other banks = 0008H
 
                Number of data buffers for drive P: (#4) ? 
                Allocate buffers outside of Common (Y) ? 
 
      Available space in 256 byte pages:
-     TPA = 00F4H, Bank 0 = 0000H, Other banks = 0000H
+     TPA = 00F3H, Bank 0 = 0000H, Other banks = 0000H
 
 
 Accept new buffer definitions (Y) ? 
 
- RESBIOS3 SPR  FA00H  0600H
+ RESBIOS3 SPR  F900H  0700H
  BNKBIOS3 SPR  5600H  2A00H
- RESBDOS3 SPR  F400H  0600H
+ RESBDOS3 SPR  F300H  0600H
  BNKBDOS3 SPR  2800H  2E00H
 
 *** CP/M 3.0 SYSTEM GENERATION DONE ***
-H>ERA TEST.SYS
-H>REN TEST.SYS=CPM3.SYS
-H>PIP ZPM3.SYS=TEST.SYS
-A:PIP      COM
-
-H>;
-H>; Make TEST.COM system loader containing TEST.SYS
-H>; (this doesn't work on distributed CPM3-128.SYS
-H>; since XMOVE isn't implemented in it)
-H>PIP TEST.COM=BOOTSYS.BIN,TEST.SYS
-A:PIP      COM
-
+H>ERA DRI3DBG.SYS
+H>REN DRI3DBG.SYS=CPM3.SYS
 H>;
 H>DATE
 A:DATE     COM
-Tue 16/03/2021 15:11:31
+Tue 16/03/2021 12:02:48
 H>;
 H>; All done - end of log file
 H>PUT CONSOLE TO CONSOLE

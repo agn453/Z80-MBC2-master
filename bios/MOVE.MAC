@@ -6,6 +6,9 @@
 ;	BOOTSYS to load a replacement system image under a
 ;	running banked system into the correct memory banks).
 ;
+;	Added debugging to output console messages when both
+;	XMOVE and MOVE are called.  16-Mar-2021
+;
 ;	Assemble using Microsoft M80 or Hector Peraza's ZSM4
 ;
 ;******************************************************************************
@@ -25,6 +28,8 @@ false	equ	not true
 				; DETERMINE IF FOR BANK SELECT OR NOT
 banked	equ	true		; <------ BANKED/NON-BANKED SWITCH
 
+	include	config.lib	;AGN - for debugging
+
 				; LOCATE CODE IN THE COMMON SEGMENT:
 				; --------------------------
 	cseg
@@ -38,6 +43,10 @@ banked	equ	true		; <------ BANKED/NON-BANKED SWITCH
 
   if banked
 	extrn ?bnksl
+  endif
+
+  if DBG			;AGN - for debugging
+	extrn	?pmsg, ?phex
   endif
 
 ; -----------------------------------------------------------------------------
@@ -70,6 +79,21 @@ sdmount$opc equ	087h		; SDMOUNT opcode
 	ld	a,0FFh		; Set extended move flag
 	ld	(xmov$flag),a
 	ld	(xmov$src),bc	; Save destination (B) and source (C) banks
+    if DBG
+	ld	(dbgstk),sp	; Swap to stack in common memory
+	ld	sp,dbgstk
+	push	hl		; output "XMOVE(src,dst)" to console
+	ld	hl,xmove$msg
+	call	?pmsg		; ?pmsg saves BC and DE
+	ld	a,c		; source bank
+	call	?phex
+	call	?pmsg
+	ld	a,b		; dest bank
+	call	?phex
+	call	?pmsg
+	pop	hl
+	ld	sp,(dbgstk)
+    endif
 	ret
 
 xmov$flag: defb	0		; Non-zero for extended move
@@ -86,6 +110,33 @@ xmov$buf: defs	128		; 128 byte bounce buffer
 				;  DIFFERENT BANKS
 ?move:
   if banked
+    if DBG
+	ld	(dbgstk),sp	; Swap to stack in common memory
+	ld	sp,dbgstk
+	push	hl		; output "MOVE(len,src,dst)" to console
+	ld	hl,move$msg
+	call	?pmsg
+	ld	a,b		; length
+	call	?phex
+	ld	a,c
+	call	?phex
+	call	?pmsg
+	ld	a,d		; source
+	call	?phex
+	ld	a,e
+	call	?phex
+	ld	hl,comma$msg
+	call	?pmsg
+	ex	(sp),hl		; dest
+	ld	a,h
+	call	?phex
+	ld	a,l
+	call	?phex
+	ex	(sp),hl
+	call	?pmsg
+	pop	hl
+	ld	sp,(dbgstk)
+    endif
 	ld	a,(xmov$flag)	; is this an extended memory move?
 	or	a
 	jr	z,mover		; no
@@ -128,19 +179,36 @@ mover:
 				; ?BANK is called with the bank address in register A. This bank address ha
 				; stored in @CBNK for future reference. All registers except A must be main
 ?bank:
-	 if	banked
+  if	banked
 	push	af		; Save requested bank
 	ld	a, setbank$opc	; Select the SETBANK opcode
 	out	(sto$opcd),a
 	pop	af		; A = bank number [0..2]
 	out	(exc$wr$opcd),a	; Select it
-	 endif
+  endif
 	ret
 
   if banked
 	cseg
 	defs	24		; 12-level stack in common
 cmnstk:	defs	2
+
+    if DBG
+	defs	24		; debugging stack in common
+dbgstk:	defs	2
+
+cr	equ	13
+lf	equ	10
+
+xmove$msg:
+	defb	cr,lf,'X'
+move$msg:
+	defb	'MOVE(',0
+comma$msg:
+	defb	',',0
+	defb	')',cr,lf,0
+    endif
+
   endif
 
 	end

@@ -1,28 +1,28 @@
-; BUILDZPR.SUB - Assemble and Link Banked BIOS and Generate a new TEST.SYS
+; DEBUGZPR.SUB - Assemble and Link Banked BIOS and Generate a new TEST.SYS
 ;
 ; Two parameters can be specified for GENCPM (usually AUTO DISPLAY)
-; The GENCPM memory layout defaults are in the GENCPM.ZPR file. Any
+; The GENCPM memory layout defaults are in the GENCPMDB.ZPR file. Any
 ; changes to the memory layout during the GENCPM phase should be
 ; manually copied to this file for future builds.
 ;
-ERA BUILDZPR.LOG
-PUT CONSOLE OUTPUT TO FILE BUILDZPR.LOG [SYSTEM]
+ERA DEBUGZPR.LOG
+PUT CONSOLE OUTPUT TO FILE DEBUGZPR.LOG [SYSTEM]
 ;
 DATE
 ;
-PIP CONFIG.LIB=NODEBUG.LIB
+PIP CONFIG.LIB=DEBUG.LIB
 ;
 ; Assemble the modified Z80 translated source-code versions (.MAC sources)
 ; (The ZPM3 define causes the boot sign-on to include "with ZPM3")
 ZSM4 BIOSKRNL,BIOSKRNL.LIS=BIOSKRNL
-ZSM4 BOOT,BOOT.LIS=BOOT/DZPM3=1
+ZSM4 BOOT,BOOT.LIS=BOOT/dZPM3=1
 ZSM4 CHARIO,CHARIO.LIS=CHARIO
 ZSM4 MOVE,MOVE.LIS=MOVE
 ZSM4 SCB,SCB.LIS=SCB
 ZSM4 VDISK,VDISK.LIS=VDISK
 ;
 ZSM4 LDRBIOS,LDRBIOS.LIS=LDRBIOS
-ZSM4 TESTLDR,TESTLDR.LIS=CPMLDR3/DTEST=1
+ZSM4 TESTLDR,TESTLDR.LIS=CPMLDR3/dTEST=1
 LINK TESTLDR=TESTLDR,LDRBIOS
 ;
 ; Make banked memory page relocatable of BIOS for GENCPM to use
@@ -33,11 +33,11 @@ USE-ZPM3.SUB
 ;
 ; Create the TEST.SYS file
 ERA GENCPM.DAT
-PIP GENCPM.DAT=GENCPM.ZPR
+PIP GENCPM.DAT=GENCPMDB.ZPR
 GENCPM3 $1 $2
 ERA TEST.SYS
 REN TEST.SYS=CPM3.SYS
-PIP ZPM3.SYS=TEST.SYS
+PIP ZPM3DBG.SYS=TEST.SYS
 ;
 ; Make TEST.COM system loader containing TEST.SYS
 ; (this doesn't work on distributed CPM3-128.SYS
