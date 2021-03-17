@@ -17,6 +17,14 @@ Assembler(2).
 
 ## Modification History (in reverse chronological order):
 
+### 17-Mar-2021
+
+Modify the XMODEM program to use half the available memory for buffering
+the file to send or receive.  The relatively slow access time to read or
+write a file to the microSD card was causing a time-out and abort when
+sending or receiving large files while the file was being read/written.
+
+
 ### 16-Mar-2021
 
 Some minor updates to allow debugging the banked BIOS memory move

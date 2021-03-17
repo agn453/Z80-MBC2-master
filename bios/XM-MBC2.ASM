@@ -1,3 +1,9 @@
+;** This version for the Z80-MBC2 has been edited to reduce the
+;** amount of memory buffering used.  The microSD card file system
+;** takes too long to fill a large buffer when sending a file,
+;** so this is a workaround to avoid the receiver timing out
+;** and aborting the transfer.
+;
 ;==============================================================
 ;               CP/M XMODEM by Martin Eberhard 
 ;==============================================================
@@ -799,6 +805,8 @@ RXCKSM:	call	RXBYT1		;2nd CRC byte or cksum
 ;------------------------------------------------
 	shld	BLKPTR		;next slot in BUFFER
 	lda	BDOSA+1		;high byte of BDOS
+  ora a ;AGN clear carry and divide by 2
+  rar  ;AGN
 	cmp	h		;full buffer?
 
 ;Bump 16-bit buffer block count (doesn't affect Z)
@@ -1079,6 +1087,8 @@ FBLOOP:	mvi	c,BSTDMA	;de=CP/M DMA address
 	shld	BUFCNT		;same size as logical sectors.
 
 	lda	BDOSA+1		;High byte of BDOS address
+  ora a ;AGN clear carry and divide by 2
+  rar  ;AGN
 	cmp	d		;All full?
 	jnz	FBLOOP		;n: go until all space used
 
