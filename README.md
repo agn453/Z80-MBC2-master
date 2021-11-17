@@ -20,7 +20,7 @@ Assembler(2).
 ### 17-Nov-2021
 
 Updated the Z80-MBC2 XMODEM.COM to the latest version of
-Martin Eberhard's XMODEM version 2.9.  The new varsion is in the
+Martin Eberhard's XMODEM version 2.9.  The new version is in the
 "bios" subdirectory as
 [XMODEM.COM](https://raw.githubusercontent.com/agn453/Z80-MBC2-master/master/bios/XMODEM.COM) and the new configuration file
 [XMODEM.CFG](https://raw.githubusercontent.com/agn453/Z80-MBC2-master/master/bios/XMODEM.CFG),
