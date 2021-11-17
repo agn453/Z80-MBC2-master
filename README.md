@@ -17,6 +17,25 @@ Assembler(2).
 
 ## Modification History (in reverse chronological order):
 
+### 17-Nov-2021
+
+Updated the Z80-MBC2 XMODEM.COM to the latest version of
+Martin Eberhard's XMODEM version 2.9.  The new varsion is in the
+"bios" subdirectory as
+[XMODEM.COM](https://raw.githubusercontent.com/agn453/Z80-MBC2-master/master/bios/XMODEM.COM) and the new configuration file
+[XMODEM.CFG](https://raw.githubusercontent.com/agn453/Z80-MBC2-master/master/bios/XMODEM.CFG),
+with the Zilog Z80 assembler source-code in 
+[XM29MBC2.MAC](https://raw.githubusercontent.com/agn453/Z80-MBC2-master/master/bios/XM29MBC2.MAC).
+This version has a new /K option that controls the amount of file
+buffer space used for the file transfer.  The XMODEM.CFG file supplied
+has as a default /K20 - which limits the buffer to 20KB (which is
+sufficient to allow for the slow file writes to the microSD file system
+and prevent timeouts).
+
+The old version has been renamed to XMODEM27.COM (and XMODEM27.CFG)
+respectively.
+
+
 ### 17-Mar-2021
 
 Modify the XMODEM program to use half the available memory for buffering
